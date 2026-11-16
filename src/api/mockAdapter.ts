@@ -5,33 +5,34 @@ import {
   SEED_JOBS,
   SEED_PAGA_EVENTS,
   SEED_WORKER,
+  SEED_WORKERS_DIRECTORY,
 } from './mockData'
 import type {
   ActiveMonthCell,
   ClientTokenSummary,
+  ConfirmationOutcome,
   ConsentRecord,
   DisputeReason,
   DisputeRecord,
-  EvidenceGrade,
-  GradeMixItem,
-  Job,
-  JobType,
+  EscrowJob,
+  JobDay,
+  OutcomeMixItem,
   PagaEventLog,
-  PaymentRequestSession,
   ReportPayload,
   ScoreComponent,
+  TradeType,
   Worker,
 } from './types'
 
-const STORAGE_KEY = 'proofwork_demo_state_v1'
+const STORAGE_KEY = 'proofwork_escrow_demo_v2'
 
 interface DemoState {
   worker: Worker
-  jobs: Job[]
+  directory: Worker[]
+  jobs: EscrowJob[]
   consents: ConsentRecord[]
   disputes: DisputeRecord[]
   pagaEvents: PagaEventLog[]
-  paymentRequests: Record<string, PaymentRequestSession>
 }
 
 function loadState(): DemoState {
@@ -39,15 +40,15 @@ function loadState(): DemoState {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return JSON.parse(raw) as DemoState
   } catch {
-    // Fallback to seed if storage is unavailable
+    // Fallback to seed
   }
   return {
     worker: SEED_WORKER,
+    directory: SEED_WORKERS_DIRECTORY,
     jobs: SEED_JOBS,
     consents: SEED_CONSENTS,
     disputes: SEED_DISPUTES,
     pagaEvents: SEED_PAGA_EVENTS,
-    paymentRequests: {},
   }
 }
 
@@ -55,21 +56,31 @@ function saveState(state: DemoState): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   } catch {
-    // Ignore storage quota errors in demo mode
+    // Ignore storage errors
   }
 }
 
 export function resetDemoState(): DemoState {
   const fresh: DemoState = {
     worker: SEED_WORKER,
+    directory: SEED_WORKERS_DIRECTORY,
     jobs: SEED_JOBS,
     consents: SEED_CONSENTS,
     disputes: SEED_DISPUTES,
     pagaEvents: SEED_PAGA_EVENTS,
-    paymentRequests: {},
   }
   saveState(fresh)
   return fresh
+}
+
+function computeDailySchedule(totalKobo: number, daysCount: number): JobDay[] {
+  const base = Math.floor(totalKobo / daysCount)
+  const remainder = totalKobo - base * daysCount
+  return Array.from({ length: daysCount }, (_, i) => ({
+    dayNumber: i + 1,
+    amountKobo: i === daysCount - 1 ? base + remainder : base,
+    status: 'PENDING',
+  }))
 }
 
 function computeReport(state: DemoState, reportToken: string): ReportPayload {
@@ -77,65 +88,87 @@ function computeReport(state: DemoState, reportToken: string): ReportPayload {
     state.consents.find((c) => c.reportToken === reportToken && !c.revokedAt) ??
     state.consents[0]
 
-  const confirmed = state.jobs.filter((j) => j.status === 'confirmed')
-  const distinctClients = new Set(confirmed.map((j) => j.clientToken))
+  const settledDays: Array<{ job: EscrowJob; day: JobDay }> = []
+  const disputedDays: Array<{ job: EscrowJob; day: JobDay }> = []
+
+  for (const job of state.jobs) {
+    for (const day of job.days) {
+      if (day.status === 'PAID' || day.status === 'CONFIRMED' || day.status === 'AUTO_RELEASED') {
+        settledDays.push({ job, day })
+      } else if (day.status === 'DISPUTED') {
+        disputedDays.push({ job, day })
+      }
+    }
+  }
+
+  const distinctClients = new Set(settledDays.map(({ job }) => job.clientToken))
   const uniquePayersCount = distinctClients.size
 
   const clientMonths = new Map<string, Set<string>>()
-  const clientTotals = new Map<string, { count: number; amount: number; grade1: boolean }>()
+  const clientStats = new Map<
+    string,
+    { confirmedDays: number; autoDays: number; totalNaira: number }
+  >()
 
-  for (const job of confirmed) {
+  for (const { job, day } of settledDays) {
     const ym = job.createdAt.slice(0, 7)
     if (!clientMonths.has(job.clientToken)) clientMonths.set(job.clientToken, new Set())
     clientMonths.get(job.clientToken)!.add(ym)
 
-    const prev = clientTotals.get(job.clientToken) ?? { count: 0, amount: 0, grade1: false }
-    clientTotals.set(job.clientToken, {
-      count: prev.count + 1,
-      amount: prev.amount + job.amount,
-      grade1: prev.grade1 || job.grade === 1,
+    const prev = clientStats.get(job.clientToken) ?? {
+      confirmedDays: 0,
+      autoDays: 0,
+      totalNaira: 0,
+    }
+    const isAuto = day.outcome === 'auto'
+    clientStats.set(job.clientToken, {
+      confirmedDays: prev.confirmedDays + (isAuto ? 0 : 1),
+      autoDays: prev.autoDays + (isAuto ? 1 : 0),
+      totalNaira: prev.totalNaira + Math.round(day.amountKobo / 100),
     })
   }
 
   const repeatClients = Array.from(clientMonths.entries()).filter(
     ([, months]) => months.size > 1,
   ).length
-
-  const activeMonthsSet = new Set(confirmed.map((j) => j.createdAt.slice(0, 7)))
+  const activeMonthsSet = new Set(settledDays.map(({ job }) => job.createdAt.slice(0, 7)))
   const activeMonthsCount = activeMonthsSet.size
 
-  const gradeCounts: Record<EvidenceGrade, { count: number; amount: number }> = {
-    1: { count: 0, amount: 0 },
-    2: { count: 0, amount: 0 },
-    3: { count: 0, amount: 0 },
-  }
-  for (const j of confirmed) {
-    gradeCounts[j.grade].count += 1
-    gradeCounts[j.grade].amount += j.amount
+  const outcomeCounts: Record<ConfirmationOutcome, { count: number; amountNaira: number }> = {
+    client: { count: 0, amountNaira: 0 },
+    supervisor: { count: 0, amountNaira: 0 },
+    auto: { count: 0, amountNaira: 0 },
   }
 
-  const totalConfirmed = confirmed.length || 1
-  const gradeMix: GradeMixItem[] = ([1, 2, 3] as EvidenceGrade[]).map((g) => ({
-    grade: g,
-    count: gradeCounts[g].count,
-    amount: gradeCounts[g].amount,
-    percentage: Math.round((gradeCounts[g].count / totalConfirmed) * 100),
-  }))
+  for (const { day } of settledDays) {
+    const o: ConfirmationOutcome = day.outcome ?? 'client'
+    outcomeCounts[o].count += 1
+    outcomeCounts[o].amountNaira += Math.round(day.amountKobo / 100)
+  }
 
-  const cashShare = gradeCounts[3].count / totalConfirmed
-  const uniquePts = Math.min(30, uniquePayersCount * 6)
-  const repeatPts = Math.min(25, repeatClients * 10)
+  const totalSettled = settledDays.length || 1
+  const outcomeMix: OutcomeMixItem[] = (['client', 'supervisor', 'auto'] as ConfirmationOutcome[]).map(
+    (outcome) => ({
+      outcome,
+      count: outcomeCounts[outcome].count,
+      amountNaira: outcomeCounts[outcome].amountNaira,
+      percentage: Math.round((outcomeCounts[outcome].count / totalSettled) * 100),
+    }),
+  )
+
+  const confirmedCount = outcomeCounts.client.count + outcomeCounts.supervisor.count
+  const autoCount = outcomeCounts.auto.count
+
+  const uniquePts = Math.min(30, uniquePayersCount * 10)
+  const repeatPts = Math.min(25, repeatClients * 15)
   const monthPts = Math.min(25, activeMonthsCount * 6)
-  const rawEvidencePts = Math.round(((gradeCounts[1].count + gradeCounts[2].count) / totalConfirmed) * 20)
-  const evidencePts = cashShare > 0.2 ? Math.min(rawEvidencePts, 14) : rawEvidencePts
-
+  const qualityPts = Math.round(((confirmedCount + autoCount * 0.4) / totalSettled) * 20)
   const circularJobs = state.jobs.filter((j) => j.flaggedCircular)
-  const disputedJobs = state.jobs.filter((j) => j.status === 'disputed')
-  const deductionPts = circularJobs.length * -10
+  const deductionPts = circularJobs.length * -15
 
   const score = Math.max(
     0,
-    Math.min(100, uniquePts + repeatPts + monthPts + evidencePts + deductionPts),
+    Math.min(100, uniquePts + repeatPts + monthPts + qualityPts + deductionPts),
   )
 
   const components: ScoreComponent[] = [
@@ -144,45 +177,38 @@ function computeReport(state: DemoState, reportToken: string): ReportPayload {
       label: 'Unique confirmed payers',
       points: uniquePts,
       maxPoints: 30,
-      detail: `${uniquePayersCount} distinct clients with confirmed jobs`,
-      relatedJobIds: confirmed.map((j) => j.id),
+      detail: `${uniquePayersCount} distinct client(s) with locked & settled days`,
     },
     {
       key: 'repeat_clients',
       label: 'Repeat clients across months',
       points: repeatPts,
       maxPoints: 25,
-      detail: `${repeatClients} clients confirmed jobs in more than one month`,
-      relatedJobIds: confirmed
-        .filter((j) => (clientMonths.get(j.clientToken)?.size ?? 0) > 1)
-        .map((j) => j.id),
+      detail: `${repeatClients} client(s) funded jobs in more than one month`,
     },
     {
       key: 'active_months',
       label: 'Active months',
       points: monthPts,
       maxPoints: 25,
-      detail: `${activeMonthsCount} months with confirmed work`,
-      relatedJobIds: confirmed.map((j) => j.id),
+      detail: `${activeMonthsCount} month(s) with settled work`,
     },
     {
-      key: 'evidence_quality',
-      label: 'Evidence grade quality',
-      points: evidencePts,
+      key: 'confirmation_quality',
+      label: 'Explicit confirmation quality',
+      points: qualityPts,
       maxPoints: 20,
-      detail: `${gradeMix[0].percentage + gradeMix[1].percentage}% from link or bank transfer (cash capped at 20%)`,
-      relatedJobIds: confirmed.filter((j) => j.grade !== 3).map((j) => j.id),
+      detail: `${confirmedCount} confirmed day(s), ${autoCount} auto-released (weighted 0.4x)`,
     },
   ]
 
-  if (circularJobs.length > 0 || disputedJobs.length > 0) {
+  if (circularJobs.length > 0 || disputedDays.length > 0) {
     components.push({
       key: 'deductions',
-      label: 'Flags & disputed records',
+      label: 'Disputes & flags',
       points: deductionPts,
       maxPoints: 0,
-      detail: `${disputedJobs.length} disputed (excluded), ${circularJobs.length} circular-flow flag(s)`,
-      relatedJobIds: [...disputedJobs, ...circularJobs].map((j) => j.id),
+      detail: `${disputedDays.length} disputed day(s) excluded, ${circularJobs.length} circular flag(s)`,
     })
   }
 
@@ -194,23 +220,24 @@ function computeReport(state: DemoState, reportToken: string): ReportPayload {
     '2026-11': 'Nov',
   }
   const activeMonths: ActiveMonthCell[] = monthsOrder.map((m) => {
-    const inMonth = confirmed.filter((j) => j.createdAt.startsWith(m))
+    const inMonth = settledDays.filter(({ job }) => job.createdAt.startsWith(m))
     return {
       month: m,
       label: monthLabels[m],
-      confirmedCount: inMonth.length,
-      totalAmount: inMonth.reduce((sum, j) => sum + j.amount, 0),
+      confirmedDays: inMonth.length,
+      totalNaira: inMonth.reduce((sum, { day }) => sum + Math.round(day.amountKobo / 100), 0),
     }
   })
 
-  const clientTokens: ClientTokenSummary[] = Array.from(clientTotals.entries()).map(
+  const clientTokens: ClientTokenSummary[] = Array.from(clientStats.entries()).map(
     ([token, info]) => ({
       token,
       displayLabel: `Client ${token}`,
-      phoneVerified: info.grade1,
-      confirmedCount: info.count,
+      phoneVerified: true,
+      confirmedDays: info.confirmedDays,
+      autoReleasedDays: info.autoDays,
       monthsActive: clientMonths.get(token)?.size ?? 1,
-      totalAmount: info.amount,
+      totalNaira: info.totalNaira,
     }),
   )
 
@@ -220,6 +247,7 @@ function computeReport(state: DemoState, reportToken: string): ReportPayload {
       id: state.worker.id,
       name: state.worker.name,
       trade: state.worker.trade,
+      area: state.worker.area,
     },
     lenderName: consent?.lenderName ?? 'Lapo Microfinance Bank',
     generatedAt: new Date().toISOString(),
@@ -227,23 +255,26 @@ function computeReport(state: DemoState, reportToken: string): ReportPayload {
     score,
     band: getScoreBand(score),
     components,
-    gradeMix,
+    outcomeMix,
     activeMonths,
     clientTokens,
     jobs: state.jobs,
     circularFlags: circularJobs.map(
-      (j) => `Job ${j.id}: payer account matched worker sweep account`,
+      (j) => `Job ${j.id}: funding account matched worker payout account`,
     ),
     signedSnapshot: {
       workerId: state.worker.id,
       standingTier: getScoreBand(score),
       standingScore: score,
       signals: {
-        confirmedJobs: confirmed.length,
+        confirmedDays: confirmedCount,
+        autoReleasedDays: autoCount,
         uniqueClients: uniquePayersCount,
         activeMonths: activeMonthsCount,
-        totalConfirmedNaira: confirmed.reduce((sum, j) => sum + j.amount, 0),
-        cashSharePercent: gradeMix[2].percentage,
+        totalPaidNaira: settledDays.reduce(
+          (sum, { day }) => sum + Math.round(day.amountKobo / 100),
+          0,
+        ),
       },
       signedAt: new Date().toISOString(),
       signature: 'ed25519:9f84c2a1e7b03d89f612a4c7e19b0d3a5e7f8c2b1a4d6e8f',
@@ -262,17 +293,97 @@ export const mockAdapter = {
     }
   },
 
-  async linkPayerToClient(jobId: string, clientName: string, _clientPhone: string) {
+  async getAvailableWorkers(trade?: TradeType) {
     const state = loadState()
-    const token = clientName.slice(0, 2).toUpperCase() + Math.floor(1 + Math.random() * 9)
+    return trade
+      ? state.directory.filter((w) => w.trade === trade && w.available)
+      : state.directory.filter((w) => w.available)
+  },
+
+  async createAndRequestFunding(input: {
+    clientName: string
+    workerId: string
+    trade: TradeType
+    description: string
+    area: string
+    totalNaira: number
+    daysCount: number
+    supervisorName?: string
+    supervisorPhone?: string
+  }): Promise<EscrowJob> {
+    const state = loadState()
+    const worker = state.directory.find((w) => w.id === input.workerId) ?? state.worker
+    const id = `job_${Date.now().toString().slice(-3)}`
+    const totalKobo = Math.round(input.totalNaira * 100)
+    const job: EscrowJob = {
+      id,
+      clientId: 'cli_web',
+      clientName: input.clientName,
+      clientToken: input.clientName.slice(0, 2).toUpperCase() + '4',
+      workerId: worker.id,
+      workerName: worker.name,
+      supervisorName: input.supervisorName?.trim() || undefined,
+      supervisorPhone: input.supervisorPhone?.trim() || undefined,
+      trade: input.trade,
+      description: input.description,
+      area: input.area,
+      totalKobo,
+      daysCount: input.daysCount,
+      status: 'AWAITING_FUNDING',
+      fundingAccountNumber: `7740${Date.now().toString().slice(-6)}`,
+      fundingLink: `https://pay.paga.com/pw-${id}`,
+      days: computeDailySchedule(totalKobo, input.daysCount),
+      createdAt: new Date().toISOString(),
+    }
+    state.jobs = [job, ...state.jobs]
+    saveState(state)
+    return job
+  },
+
+  async simulateFundJob(jobId: string): Promise<EscrowJob> {
+    const state = loadState()
+    state.jobs = state.jobs.map((j) =>
+      j.id === jobId ? { ...j, status: 'FUNDED' } : j,
+    )
+    const funded = state.jobs.find((j) => j.id === jobId)!
+    state.pagaEvents = [
+      {
+        id: `evt_${Date.now().toString().slice(-4)}`,
+        eventType: 'ESCROW_FUNDED',
+        reference: `PAGA-ESC-${jobId}`,
+        idempotencyKey: `idem_${Date.now().toString(36)}`,
+        hashValid: true,
+        reconcileVerified: true,
+        amountNaira: Math.round(funded.totalKobo / 100),
+        payerName: funded.clientName,
+        receivedAt: new Date().toISOString(),
+        outcome: `Locked ₦${Math.round(funded.totalKobo / 100).toLocaleString()} for ${funded.daysCount} days (${jobId})`,
+      },
+      ...state.pagaEvents,
+    ]
+    saveState(state)
+    return funded
+  },
+
+  async markDayDone(jobId: string, dayNumber: number): Promise<EscrowJob> {
+    const state = loadState()
+    const now = Date.now()
+    const releaseAt = new Date(now + 24 * 3600 * 1000).toISOString()
     state.jobs = state.jobs.map((j) =>
       j.id === jobId
         ? {
             ...j,
-            clientName,
-            clientToken: token,
-            needsPayerLink: false,
-            confirmToken: j.confirmToken ?? `tok_${j.id}`,
+            status: 'IN_PROGRESS',
+            days: j.days.map((d) =>
+              d.dayNumber === dayNumber
+                ? {
+                    ...d,
+                    status: 'DONE_REPORTED',
+                    doneAt: new Date(now).toISOString(),
+                    releaseAt,
+                  }
+                : d,
+            ),
           }
         : j,
     )
@@ -280,25 +391,138 @@ export const mockAdapter = {
     return state.jobs.find((j) => j.id === jobId)!
   },
 
-  async createCashDraft(clientName: string, _clientPhone: string, amount: number, jobType: JobType) {
+  async confirmDay(
+    jobId: string,
+    dayNumber: number,
+    actor: 'client' | 'supervisor',
+  ): Promise<EscrowJob> {
     const state = loadState()
-    const id = `job_${Date.now().toString().slice(-4)}`
-    const token = clientName.slice(0, 2).toUpperCase() + '8'
-    const newJob: Job = {
-      id,
-      workerId: state.worker.id,
-      clientName,
-      clientToken: token,
-      amount,
-      jobType,
-      grade: 3,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      confirmToken: `tok_${id}`,
-    }
-    state.jobs = [newJob, ...state.jobs]
+    let paidNaira = 0
+    let workerName = state.worker.name
+    state.jobs = state.jobs.map((j) => {
+      if (j.id !== jobId) return j
+      workerName = j.workerName
+      const updatedDays = j.days.map((d) => {
+        if (d.dayNumber !== dayNumber) return d
+        paidNaira = Math.round(d.amountKobo / 100)
+        return {
+          ...d,
+          status: 'PAID' as const,
+          outcome: actor,
+          decidedBy: actor === 'supervisor' ? j.supervisorName ?? 'Supervisor' : j.clientName,
+          decidedAt: new Date().toISOString(),
+        }
+      })
+      const allDone = updatedDays.every((d) => d.status === 'PAID' || d.status === 'DISPUTED')
+      return {
+        ...j,
+        status: allDone ? 'COMPLETED' : 'IN_PROGRESS',
+        receiptId: allDone ? j.receiptId ?? `PW-ESC-${jobId.slice(-3)}` : j.receiptId,
+        days: updatedDays,
+      }
+    })
+    state.pagaEvents = [
+      {
+        id: `evt_${Date.now().toString().slice(-4)}`,
+        eventType: 'DAY_PAYOUT',
+        reference: `PAGA-PAY-${jobId}-D${dayNumber}`,
+        idempotencyKey: `idem_${jobId}_d${dayNumber}`,
+        hashValid: true,
+        reconcileVerified: true,
+        amountNaira: paidNaira,
+        payerName: workerName,
+        receivedAt: new Date().toISOString(),
+        outcome: `Released Day ${dayNumber} (${actor} confirmed) to Paga payout account`,
+      },
+      ...state.pagaEvents,
+    ]
     saveState(state)
-    return newJob
+    return state.jobs.find((j) => j.id === jobId)!
+  },
+
+  async disputeDay(
+    jobId: string,
+    dayNumber: number,
+    reason: DisputeReason,
+    raisedBy: 'client' | 'supervisor' = 'client',
+  ) {
+    const state = loadState()
+    const job = state.jobs.find((j) => j.id === jobId)
+    if (!job) throw new Error('Job not found')
+    const day = job.days.find((d) => d.dayNumber === dayNumber)
+    if (!day) throw new Error('Day not found')
+
+    state.jobs = state.jobs.map((j) =>
+      j.id === jobId
+        ? {
+            ...j,
+            days: j.days.map((d) =>
+              d.dayNumber === dayNumber ? { ...d, status: 'DISPUTED' } : d,
+            ),
+          }
+        : j,
+    )
+    state.disputes = [
+      {
+        id: `dsp_${Date.now().toString().slice(-4)}`,
+        jobId,
+        dayNumber,
+        workerName: job.workerName,
+        clientToken: job.clientToken,
+        amountNaira: Math.round(day.amountKobo / 100),
+        reason,
+        raisedBy,
+        status: 'open',
+        createdAt: new Date().toISOString(),
+      },
+      ...state.disputes,
+    ]
+    saveState(state)
+  },
+
+  async simulateAutoReleaseNext() {
+    const state = loadState()
+    for (const job of state.jobs) {
+      const target = job.days.find((d) => d.status === 'DONE_REPORTED')
+      if (target) {
+        state.jobs = state.jobs.map((j) =>
+          j.id === job.id
+            ? {
+                ...j,
+                days: j.days.map((d) =>
+                  d.dayNumber === target.dayNumber
+                    ? {
+                        ...d,
+                        status: 'PAID',
+                        outcome: 'auto',
+                        decidedBy: 'Scheduler (24h)',
+                        decidedAt: new Date().toISOString(),
+                      }
+                    : d,
+                ),
+              }
+            : j,
+        )
+        state.pagaEvents = [
+          {
+            id: `evt_${Date.now().toString().slice(-4)}`,
+            eventType: 'DAY_PAYOUT',
+            reference: `PAGA-AUTO-${job.id}-D${target.dayNumber}`,
+            idempotencyKey: `idem_auto_${job.id}_d${target.dayNumber}`,
+            hashValid: true,
+            reconcileVerified: true,
+            amountNaira: Math.round(target.amountKobo / 100),
+            payerName: job.workerName,
+            receivedAt: new Date().toISOString(),
+            outcome: `24h Auto-release Day ${target.dayNumber} of ${job.id} (lower score weight)`,
+          },
+          ...state.pagaEvents,
+        ]
+        saveState(state)
+        return { message: `Auto-released Day ${target.dayNumber} of ${job.id} after 24h window.` }
+      }
+    }
+    return { message: 'No DONE_REPORTED days waiting in 24h window.' }
   },
 
   async createConsent(lenderName: string, daysValid = 7) {
@@ -317,133 +541,6 @@ export const mockAdapter = {
     return consent
   },
 
-  async getConfirmJob(token: string) {
-    const state = loadState()
-    const job = state.jobs.find((j) => j.confirmToken === token || j.id === token)
-    return {
-      workerName: state.worker.name,
-      job: job ?? null,
-    }
-  },
-
-  async confirmJob(token: string, jobType: JobType) {
-    const state = loadState()
-    const receiptId = `PW-REC-${Math.floor(1000 + Math.random() * 9000)}`
-    state.jobs = state.jobs.map((j) =>
-      j.confirmToken === token || j.id === token
-        ? {
-            ...j,
-            jobType,
-            status: 'confirmed',
-            confirmedAt: new Date().toISOString(),
-            receiptId: j.receiptId ?? receiptId,
-          }
-        : j,
-    )
-    saveState(state)
-    return state.jobs.find((j) => j.confirmToken === token || j.id === token)!
-  },
-
-  async disputeJob(token: string, reason: DisputeReason, raisedBy: 'client' | 'worker' = 'client') {
-    const state = loadState()
-    const target = state.jobs.find((j) => j.confirmToken === token || j.id === token)
-    if (!target) throw new Error('Job not found')
-
-    state.jobs = state.jobs.map((j) =>
-      j.id === target.id ? { ...j, status: 'disputed' } : j,
-    )
-    state.disputes = [
-      {
-        id: `dsp_${Date.now().toString().slice(-4)}`,
-        jobId: target.id,
-        workerName: state.worker.name,
-        clientToken: target.clientToken,
-        amount: target.amount,
-        reason,
-        raisedBy,
-        status: 'open',
-        createdAt: new Date().toISOString(),
-      },
-      ...state.disputes,
-    ]
-    saveState(state)
-    return target
-  },
-
-  async createPaymentRequest(
-    workerSlug: string,
-    amount: number,
-    jobType: JobType,
-    payerName: string,
-    payerPhone: string,
-  ): Promise<PaymentRequestSession> {
-    const state = loadState()
-    const ref = `PW-REQ-${Date.now().toString().slice(-5)}`
-    const session: PaymentRequestSession = {
-      referenceNumber: ref,
-      workerSlug,
-      workerName: state.worker.name,
-      amount,
-      jobType,
-      payerName,
-      payerPhone,
-      state: 'pending',
-      pagaTransferAccount: '7740192831',
-      pagaTransferBank: 'Paga',
-      ussdCode: `*242*000*${amount}#`,
-      expiresAt: new Date(Date.now() + 15 * 60000).toISOString(),
-    }
-    state.paymentRequests[ref] = session
-    saveState(state)
-    return session
-  },
-
-  async completePaymentRequest(referenceNumber: string): Promise<PaymentRequestSession> {
-    const state = loadState()
-    const session = state.paymentRequests[referenceNumber]
-    if (!session) throw new Error('Payment request not found')
-    const receiptId = `PW-REC-${Math.floor(1000 + Math.random() * 9000)}`
-    const updated: PaymentRequestSession = {
-      ...session,
-      state: 'paid',
-      receiptId,
-    }
-    state.paymentRequests[referenceNumber] = updated
-
-    const newJob: Job = {
-      id: `job_${Date.now().toString().slice(-4)}`,
-      workerId: state.worker.id,
-      clientName: session.payerName,
-      clientToken: session.payerName.slice(0, 2).toUpperCase() + '5',
-      amount: session.amount,
-      jobType: session.jobType,
-      grade: 1,
-      status: 'confirmed',
-      createdAt: new Date().toISOString(),
-      confirmedAt: new Date().toISOString(),
-      receiptId,
-    }
-    state.jobs = [newJob, ...state.jobs]
-    state.pagaEvents = [
-      {
-        id: `evt_${Date.now().toString().slice(-4)}`,
-        eventType: 'PAYMENT_REQUEST_CALLBACK',
-        reference: referenceNumber,
-        idempotencyKey: `idem_${Date.now().toString(36)}`,
-        hashValid: true,
-        reconcileVerified: true,
-        idempotentDuplicate: false,
-        amount: session.amount,
-        payerName: session.payerName,
-        receivedAt: new Date().toISOString(),
-        outcome: `Confirmed Grade 1 ${newJob.id}`,
-      },
-      ...state.pagaEvents,
-    ]
-    saveState(state)
-    return updated
-  },
-
   async getReport(reportToken: string) {
     const state = loadState()
     return computeReport(state, reportToken)
@@ -454,7 +551,6 @@ export const mockAdapter = {
     return {
       disputes: state.disputes,
       pagaEvents: state.pagaEvents,
-      circularJobs: state.jobs.filter((j) => j.flaggedCircular),
     }
   },
 
@@ -467,90 +563,18 @@ export const mockAdapter = {
     )
     if (resolution === 'dismiss') {
       state.jobs = state.jobs.map((j) =>
-        j.id === dispute.jobId ? { ...j, status: 'confirmed' } : j,
+        j.id === dispute.jobId
+          ? {
+              ...j,
+              days: j.days.map((d) =>
+                d.dayNumber === dispute.dayNumber
+                  ? { ...d, status: 'PAID', outcome: 'client', decidedBy: 'Admin resolved' }
+                  : d,
+              ),
+            }
+          : j,
       )
     }
     saveState(state)
-  },
-
-  async simulateFundingCallback(options?: { duplicate?: boolean; invalidHash?: boolean }) {
-    const state = loadState()
-    if (options?.invalidHash) {
-      state.pagaEvents = [
-        {
-          id: `evt_${Date.now().toString().slice(-4)}`,
-          eventType: 'FUNDING_CALLBACK',
-          reference: `PAGA-BAD-${Date.now().toString().slice(-4)}`,
-          idempotencyKey: `idem_${Date.now().toString(36)}`,
-          hashValid: false,
-          reconcileVerified: false,
-          idempotentDuplicate: false,
-          amount: 20000,
-          payerName: 'UNKNOWN',
-          receivedAt: new Date().toISOString(),
-          outcome: 'Rejected: x-paga-hash-v3 mismatch',
-        },
-        ...state.pagaEvents,
-      ]
-      saveState(state)
-      return { message: 'Invalid hash callback logged and rejected.' }
-    }
-
-    if (options?.duplicate) {
-      state.pagaEvents = [
-        {
-          id: `evt_${Date.now().toString().slice(-4)}`,
-          eventType: 'FUNDING_CALLBACK',
-          reference: 'PAGA-FND-99102',
-          idempotencyKey: 'idem_01JCK99102',
-          hashValid: true,
-          reconcileVerified: true,
-          idempotentDuplicate: true,
-          amount: 15000,
-          payerName: 'OKOYE C. (GTBank)',
-          receivedAt: new Date().toISOString(),
-          outcome: 'Ignored duplicate callback (idempotent)',
-        },
-        ...state.pagaEvents,
-      ]
-      saveState(state)
-      return { message: 'Duplicate callback ignored. No second job created.' }
-    }
-
-    const id = `job_${Date.now().toString().slice(-4)}`
-    const newJob: Job = {
-      id,
-      workerId: state.worker.id,
-      clientName: 'UDEH M.',
-      clientToken: 'NEW',
-      amount: 22000,
-      grade: 2,
-      status: 'waiting',
-      createdAt: new Date().toISOString(),
-      payerBankName: 'First Bank',
-      payerAccountNumber: '3091827465',
-      payerRawName: 'UDEH M.',
-      needsPayerLink: true,
-      confirmToken: `tok_${id}`,
-    }
-    state.jobs = [newJob, ...state.jobs]
-    state.pagaEvents = [
-      {
-        id: `evt_${Date.now().toString().slice(-4)}`,
-        eventType: 'FUNDING_CALLBACK',
-        reference: `PAGA-FND-${Date.now().toString().slice(-5)}`,
-        idempotencyKey: `idem_${Date.now().toString(36)}`,
-        hashValid: true,
-        reconcileVerified: true,
-        idempotentDuplicate: false,
-        amount: 22000,
-        payerName: 'UDEH M. (First Bank)',
-        receivedAt: new Date().toISOString(),
-        outcome: `Created waiting job ${id}`,
-      },
-      ...state.pagaEvents,
-    ]
-    saveState(state)
-    return { message: `Simulated ₦22,000 transfer from UDEH M. (First Bank).` }
   },
 }

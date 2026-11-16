@@ -1,5 +1,5 @@
 import { CheckCircle, Printer, Share } from 'reicon-react'
-import type { EvidenceGrade, JobType } from '@/api/types'
+import type { ConfirmationOutcome, TradeType } from '@/api/types'
 import { formatShortDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -11,8 +11,8 @@ interface ReceiptCardProps {
   workerName: string
   clientDisplay: string
   amount: number
-  jobType: JobType
-  grade: EvidenceGrade
+  trade: TradeType
+  outcome: ConfirmationOutcome
   confirmedAt: string
 }
 
@@ -21,8 +21,8 @@ export function ReceiptCard({
   workerName,
   clientDisplay,
   amount,
-  jobType,
-  grade,
+  trade,
+  outcome,
   confirmedAt,
 }: ReceiptCardProps) {
   return (
@@ -31,16 +31,16 @@ export function ReceiptCard({
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-sm font-medium text-[var(--pw-success)]">
             <CheckCircle weight="Filled" className="h-4 w-4" aria-hidden="true" />
-            <span>Confirmed receipt</span>
+            <span>Escrow receipt</span>
           </div>
           <p className="font-mono text-xs text-muted-foreground">{receiptId}</p>
         </div>
-        <GradeBadge grade={grade} />
+        <GradeBadge outcome={outcome} />
       </div>
 
       <div className="space-y-3 text-sm">
         <div className="flex items-baseline justify-between">
-          <span className="text-muted-foreground">Amount</span>
+          <span className="text-muted-foreground">Amount released</span>
           <AmountText amount={amount} size="lg" />
         </div>
         <div className="flex items-baseline justify-between">
@@ -52,8 +52,8 @@ export function ReceiptCard({
           <span className="font-medium text-foreground">{clientDisplay}</span>
         </div>
         <div className="flex items-baseline justify-between">
-          <span className="text-muted-foreground">Job type</span>
-          <span className="font-medium text-foreground">{jobType}</span>
+          <span className="text-muted-foreground">Trade</span>
+          <span className="font-medium text-foreground">{trade}</span>
         </div>
         <div className="flex items-baseline justify-between">
           <span className="text-muted-foreground">Date</span>
@@ -79,7 +79,7 @@ export function ReceiptCard({
             if (navigator.share) {
               navigator.share({
                 title: `Proofwork Receipt ${receiptId}`,
-                text: `${workerName} - ${jobType} (${receiptId})`,
+                text: `${workerName} - ${trade} (${receiptId})`,
               })
             }
           }}

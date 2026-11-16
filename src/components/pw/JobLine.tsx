@@ -1,18 +1,20 @@
-import type { Job } from '@/api/types'
+import type { EscrowJob } from '@/api/types'
 import { formatShortDate } from '@/lib/format'
 import { AmountText } from './AmountText'
 import { GradeBadge } from './GradeBadge'
 import { StatusPill } from './StatusPill'
 
 interface JobLineProps {
-  job: Job
-  mode: 'worker' | 'lender'
-  onSelect?: (job: Job) => void
+  job: EscrowJob
+  mode: 'worker' | 'lender' | 'client'
+  onSelect?: (job: EscrowJob) => void
 }
 
 export function JobLine({ job, mode, onSelect }: JobLineProps) {
   const clientLabel =
     mode === 'lender' ? `Client ${job.clientToken}` : job.clientName
+  const paidDays = job.days.filter((d) => d.status === 'PAID' || d.status === 'CONFIRMED').length
+  const latestOutcome = [...job.days].reverse().find((d) => d.outcome)?.outcome
 
   return (
     <button
@@ -23,24 +25,25 @@ export function JobLine({ job, mode, onSelect }: JobLineProps) {
       <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-foreground">{clientLabel}</span>
+            <span className="font-medium text-foreground">
+              {mode === 'client' ? job.workerName : clientLabel}
+            </span>
             <span className="text-xs text-muted-foreground">·</span>
             <span className="text-sm text-muted-foreground">
-              {job.jobType ?? 'Unassigned job'}
+              {job.trade} ({paidDays}/{job.daysCount} days)
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {formatShortDate(job.createdAt)}
-            {job.receiptId ? ` · ${job.receiptId}` : ''}
+            {job.description} · {formatShortDate(job.createdAt)}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 md:justify-end">
           <div className="flex flex-wrap items-center gap-1.5">
-            <GradeBadge grade={job.grade} size="sm" />
+            {latestOutcome && <GradeBadge outcome={latestOutcome} size="sm" />}
             <StatusPill status={job.status} />
           </div>
-          <AmountText amount={job.amount} size="md" className="min-w-[88px] text-right" />
+          <AmountText amount={Math.round(job.totalKobo / 100)} size="md" className="min-w-[88px] text-right" />
         </div>
       </div>
     </button>

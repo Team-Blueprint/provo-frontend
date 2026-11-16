@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ShieldCheck } from 'reicon-react'
 import { Card } from '@/components/ui/card'
+import { SiteFooter } from '@/components/pw/SiteFooter'
 
 const SHORT_RULES = [
   {
@@ -161,6 +162,8 @@ export function PrivacyPage() {
           </div>
         </section>
       </main>
+
+      <SiteFooter />
     </div>
   )
 }

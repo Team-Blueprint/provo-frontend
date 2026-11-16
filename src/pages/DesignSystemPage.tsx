@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'reicon-react'
-import type { JobType } from '@/api/types'
+import type { TradeType } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -56,7 +56,8 @@ const NAV_SECTIONS = [
 ]
 
 export function DesignSystemPage() {
-  const [jobType, setJobType] = useState<JobType>('Bricklaying')
+  const [jobType, setJobType] = useState<TradeType>('Bricklaying')
+  const [trade, setTrade] = useState('Bricklayer')
   const [activeNav, setActiveNav] = useState('colour')
 
   return (
@@ -266,11 +267,16 @@ export function DesignSystemPage() {
                 <label htmlFor="ds-select" className="text-sm font-medium text-foreground">
                   Trade
                 </label>
-                <Select id="ds-select" defaultValue="Bricklayer">
-                  <option value="Bricklayer">Bricklayer</option>
-                  <option value="Tailor">Tailor</option>
-                  <option value="Mechanic">Mechanic</option>
-                </Select>
+                <Select
+                  id="ds-select"
+                  value={trade}
+                  onValueChange={setTrade}
+                  options={[
+                    { value: 'Bricklayer', label: 'Bricklayer' },
+                    { value: 'Tailor', label: 'Tailor' },
+                    { value: 'Mechanic', label: 'Mechanic' },
+                  ]}
+                />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <label htmlFor="ds-textarea" className="text-sm font-medium text-foreground">
@@ -290,17 +296,17 @@ export function DesignSystemPage() {
             </div>
             <Card className="p-5 space-y-4">
               <div className="flex flex-wrap gap-3">
-                <GradeBadge grade={1} showHelp />
-                <GradeBadge grade={2} showHelp />
-                <GradeBadge grade={3} showHelp />
+                <GradeBadge outcome="client" showHelp />
+                <GradeBadge outcome="supervisor" showHelp />
+                <GradeBadge outcome="auto" showHelp />
               </div>
               <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
-                <StatusPill status="confirmed" />
-                <StatusPill status="waiting" />
-                <StatusPill status="draft" />
-                <StatusPill status="disputed" />
-                <StatusPill status="expired" />
-                <StatusPill status="failed" />
+                <StatusPill status="PAID" />
+                <StatusPill status="DONE_REPORTED" />
+                <StatusPill status="PENDING" />
+                <StatusPill status="DISPUTED" />
+                <StatusPill status="FUNDED" />
+                <StatusPill status="AWAITING_FUNDING" />
               </div>
               <div className="flex items-baseline gap-5 pt-3 border-t border-border">
                 <AmountText amount={15000} size="sm" />

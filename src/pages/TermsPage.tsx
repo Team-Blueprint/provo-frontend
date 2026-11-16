@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, FileText } from 'reicon-react'
 import { Card } from '@/components/ui/card'
+import { SiteFooter } from '@/components/pw/SiteFooter'
 
 const SHORT_TERMS = [
   {
@@ -107,6 +108,8 @@ export function TermsPage() {
           </Card>
         </section>
       </main>
+
+      <SiteFooter />
     </div>
   )
 }

@@ -1,19 +1,12 @@
 import { useState } from 'react'
-import {
-  ChatLine,
-  Flask,
-  Lightning,
-  Refresh,
-  ShieldAlert,
-  X,
-} from 'reicon-react'
+import { CloseCircle, Flask, Message, Refresh, Timer } from 'reicon-react'
 import { api } from '@/api/client'
 import { resetDemoState } from '@/api/mockAdapter'
 import { Button } from '@/components/ui/button'
 
 export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<'webhooks' | 'messages'>('webhooks')
+  const [tab, setTab] = useState<'scheduler' | 'telegram'>('scheduler')
   const [feedback, setFeedback] = useState<string | null>(null)
 
   async function run(action: () => Promise<{ message: string }>) {
@@ -40,7 +33,7 @@ export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               <Flask className="h-4 w-4 text-[var(--pw-brick)]" aria-hidden="true" />
-              <span>Demo Simulator</span>
+              <span>Escrow &amp; Telegram Simulator</span>
             </div>
             <button
               type="button"
@@ -48,59 +41,41 @@ export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
               aria-label="Close simulator"
               className="rounded-md p-1 text-muted-foreground hover:bg-muted cursor-pointer"
             >
-              <X className="h-4 w-4" />
+              <CloseCircle className="h-4 w-4" />
             </button>
           </div>
 
           <div className="grid grid-cols-2 gap-1 rounded-[var(--pw-radius-sm)] bg-muted p-1">
             <button
               type="button"
-              onClick={() => setTab('webhooks')}
+              onClick={() => setTab('scheduler')}
               className={`rounded-[6px] py-1 text-xs font-medium cursor-pointer ${
-                tab === 'webhooks' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                tab === 'scheduler' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
               }`}
             >
-              Paga Webhooks
+              Escrow Scheduler
             </button>
             <button
               type="button"
-              onClick={() => setTab('messages')}
+              onClick={() => setTab('telegram')}
               className={`rounded-[6px] py-1 text-xs font-medium cursor-pointer ${
-                tab === 'messages' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                tab === 'telegram' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
               }`}
             >
-              WhatsApp / SMS
+              Telegram / SMS
             </button>
           </div>
 
-          {tab === 'webhooks' ? (
+          {tab === 'scheduler' ? (
             <div className="space-y-2">
               <Button
                 size="sm"
                 variant="secondary"
                 className="w-full justify-start"
-                onClick={() => run(() => api.simulateFundingCallback())}
+                onClick={() => run(() => api.simulateAutoReleaseNext())}
               >
-                <Lightning className="h-4 w-4 text-primary" aria-hidden="true" />
-                <span>Simulate ₦22,000 bank transfer</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-full justify-start"
-                onClick={() => run(() => api.simulateFundingCallback({ duplicate: true }))}
-              >
-                <Lightning className="h-4 w-4 text-[var(--pw-info)]" aria-hidden="true" />
-                <span>Replay duplicate callback</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-full justify-start"
-                onClick={() => run(() => api.simulateFundingCallback({ invalidHash: true }))}
-              >
-                <ShieldAlert className="h-4 w-4 text-[var(--pw-critical)]" aria-hidden="true" />
-                <span>Send invalid hash callback</span>
+                <Timer className="h-4 w-4 text-[var(--pw-warning)]" aria-hidden="true" />
+                <span>Trigger 24h auto-release</span>
               </Button>
               <Button
                 size="sm"
@@ -108,7 +83,7 @@ export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
                 className="w-full justify-start text-muted-foreground"
                 onClick={() => {
                   resetDemoState()
-                  setFeedback('Demo data reset to Emem’s 4-month seed.')
+                  setFeedback('Demo data reset to Emem Ekpo’s escrow seed.')
                   onUpdate?.()
                   window.dispatchEvent(new CustomEvent('proofwork:demo-updated'))
                 }}
@@ -121,27 +96,21 @@ export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
             <div className="space-y-2.5 text-xs">
               <div className="rounded-[var(--pw-radius-md)] border border-border bg-muted/40 p-2.5 space-y-1">
                 <div className="flex items-center gap-1.5 font-medium text-foreground">
-                  <ChatLine className="h-3.5 w-3.5 text-[var(--pw-success)]" />
-                  <span>WhatsApp to Emem (Worker)</span>
+                  <Message className="h-3.5 w-3.5 text-primary" />
+                  <span>Telegram Bot (@ProofworkBot)</span>
                 </div>
                 <p className="text-muted-foreground">
-                  “₦15,000 arrived from OKOYE C. (GTBank). Who paid you? Tap to link client and
-                  confirm.”
+                  “Emem Ekpo marked Day 2 of 3 done (₦15,000). Confirm or dispute within 24h.”
                 </p>
               </div>
               <div className="rounded-[var(--pw-radius-md)] border border-border bg-muted/40 p-2.5 space-y-1">
-                <div className="flex items-center gap-1.5 font-medium text-foreground">
-                  <ChatLine className="h-3.5 w-3.5 text-primary" />
-                  <span>SMS to Client (No app needed)</span>
-                </div>
+                <span className="font-medium text-foreground block">
+                  SMS Invite (Simulated · Unregistered Worker)
+                </span>
                 <p className="text-muted-foreground">
-                  “You paid Emem Bassey ₦15,000. Was this for work? Confirm in 1 tap:
-                  proofwork.ng/confirm/tok_confirm_110”
+                  “Chief Etim locked ₦45,000 for Bricklaying in Uyo. Open t.me/ProofworkBot to
+                  accept.”
                 </p>
-              </div>
-              <div className="rounded-[var(--pw-radius-md)] border border-border bg-muted/40 p-2.5 space-y-1">
-                <span className="font-medium text-foreground block">USSD fallback (mocked)</span>
-                <p className="font-mono text-muted-foreground">*242*000*15000#</p>
               </div>
             </div>
           )}

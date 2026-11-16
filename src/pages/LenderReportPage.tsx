@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Check, Code, Copy, Printer, ShieldCheck, TriangleWarning } from 'reicon-react'
+import { ArrowLeft, Check, Code, Copy, Printer, ShieldCheck, Warning } from 'reicon-react'
 import { api } from '@/api/client'
-import type { EvidenceGrade, ReportPayload } from '@/api/types'
+import type { ConfirmationOutcome, ReportPayload } from '@/api/types'
 import { formatNaira, formatShortDate, getTierDetails } from '@/lib/format'
 import { messages } from '@/messages/en'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import { JobLine } from '@/components/pw/JobLine'
 export function LenderReportPage() {
   const { reportToken = 'rep_emem_lapo_2026' } = useParams()
   const [report, setReport] = useState<ReportPayload | null>(null)
-  const [gradeFilter, setGradeFilter] = useState<'all' | EvidenceGrade>('all')
+  const [outcomeFilter, setOutcomeFilter] = useState<'all' | ConfirmationOutcome>('all')
   const [copiedJson, setCopiedJson] = useState(false)
 
   async function load() {
@@ -31,14 +31,14 @@ export function LenderReportPage() {
   const filteredJobs =
     !report
       ? []
-      : gradeFilter === 'all'
+      : outcomeFilter === 'all'
         ? report.jobs
-        : report.jobs.filter((j) => j.grade === gradeFilter)
+        : report.jobs.filter((j) => j.days.some((d) => d.outcome === outcomeFilter))
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
       <header className="border-b border-border bg-card no-print">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-10 py-3.5">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             <span>Proofwork</span>
@@ -50,7 +50,7 @@ export function LenderReportPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 space-y-6">
+      <main className="mx-auto max-w-7xl px-6 lg:px-10 py-8 space-y-6">
         {!report ? (
           <div className="space-y-4">
             <Skeleton className="h-28 w-full" />
@@ -68,9 +68,8 @@ export function LenderReportPage() {
                   {report.worker.name} · {report.worker.trade}
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  Generated {formatShortDate(report.generatedAt)} · Expires{' '}
-                  {formatShortDate(report.expiresAt)} · Token{' '}
-                  <span className="font-mono">{report.reportToken}</span>
+                  {report.worker.area} · Generated {formatShortDate(report.generatedAt)} · Expires{' '}
+                  {formatShortDate(report.expiresAt)}
                 </p>
               </div>
               <div className="rounded-[var(--pw-radius-md)] border border-border bg-muted/40 px-5 py-3 text-left sm:text-right">
@@ -88,7 +87,7 @@ export function LenderReportPage() {
             {report.circularFlags.length > 0 && (
               <Card className="border-[var(--pw-critical)]/40 bg-[var(--pw-critical-tint)] p-4 space-y-1">
                 <div className="flex items-center gap-2 text-sm font-medium text-[var(--pw-critical)]">
-                  <TriangleWarning weight="Filled" className="h-4 w-4" aria-hidden="true" />
+                  <Warning weight="Filled" className="h-4 w-4" aria-hidden="true" />
                   <span>Circular-flow flag</span>
                 </div>
                 {report.circularFlags.map((flag) => (
@@ -121,16 +120,14 @@ export function LenderReportPage() {
 
               <div className="space-y-6">
                 <Card className="p-5 space-y-3">
-                  <h2 className="text-base font-medium text-foreground">Evidence grade mix</h2>
+                  <h2 className="text-base font-medium text-foreground">Day confirmation mix</h2>
                   <div className="space-y-2.5">
-                    {report.gradeMix.map((item) => (
-                      <div key={item.grade} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <GradeBadge grade={item.grade} size="sm" />
-                          <span className="tabular-nums text-muted-foreground">
-                            {item.count} jobs ({item.percentage}%)
-                          </span>
-                        </div>
+                    {report.outcomeMix.map((item) => (
+                      <div key={item.outcome} className="flex items-center justify-between text-xs">
+                        <GradeBadge outcome={item.outcome} size="sm" />
+                        <span className="tabular-nums text-muted-foreground">
+                          {item.count} days ({item.percentage}%)
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -143,14 +140,14 @@ export function LenderReportPage() {
                       <div
                         key={m.month}
                         className={`rounded-[var(--pw-radius-sm)] border p-2 text-center ${
-                          m.confirmedCount > 0
+                          m.confirmedDays > 0
                             ? 'border-primary/40 bg-secondary'
                             : 'border-border bg-muted/40'
                         }`}
                       >
                         <span className="block text-xs font-medium text-foreground">{m.label}</span>
                         <span className="block text-xs tabular-nums text-muted-foreground">
-                          {m.confirmedCount} jobs
+                          {m.confirmedDays} days
                         </span>
                       </div>
                     ))}
@@ -174,13 +171,11 @@ export function LenderReportPage() {
                       <span className="font-mono text-sm font-semibold text-foreground">
                         {ct.displayLabel}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {ct.phoneVerified ? 'phone verified' : 'bank linked'}
-                      </span>
+                      <span className="text-xs text-muted-foreground">phone verified</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {ct.confirmedCount} payments over {ct.monthsActive} month(s) ·{' '}
-                      {formatNaira(ct.totalAmount)}
+                      {ct.confirmedDays} confirmed, {ct.autoReleasedDays} auto-released ·{' '}
+                      {formatNaira(ct.totalNaira)}
                     </p>
                   </div>
                 ))}
@@ -189,20 +184,20 @@ export function LenderReportPage() {
 
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-lg font-medium text-foreground">Job ledger</h2>
+                <h2 className="text-lg font-medium text-foreground">Escrow job ledger</h2>
                 <div className="flex gap-1.5 no-print">
-                  {(['all', 1, 2, 3] as const).map((g) => (
+                  {(['all', 'client', 'supervisor', 'auto'] as const).map((o) => (
                     <button
-                      key={g}
+                      key={o}
                       type="button"
-                      onClick={() => setGradeFilter(g)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium cursor-pointer border ${
-                        gradeFilter === g
+                      onClick={() => setOutcomeFilter(o)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium capitalize cursor-pointer border ${
+                        outcomeFilter === o
                           ? 'border-primary bg-primary text-primary-foreground'
                           : 'border-border bg-card text-muted-foreground'
                       }`}
                     >
-                      {g === 'all' ? 'All grades' : `Grade ${g}`}
+                      {o === 'all' ? 'All outcomes' : o}
                     </button>
                   ))}
                 </div>

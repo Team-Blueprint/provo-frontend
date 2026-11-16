@@ -1,44 +1,51 @@
-export type EvidenceGrade = 1 | 2 | 3
-
 export type JobStatus =
-  | 'draft'
-  | 'waiting'
-  | 'confirmed'
-  | 'disputed'
-  | 'expired'
-  | 'failed'
+  | 'DRAFT'
+  | 'AWAITING_FUNDING'
+  | 'FUNDED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'DISPUTED'
 
-export type PaymentRequestState = 'pending' | 'paid' | 'failed' | 'expired'
+export type DayStatus =
+  | 'PENDING'
+  | 'DONE_REPORTED'
+  | 'CONFIRMED'
+  | 'AUTO_RELEASED'
+  | 'DISPUTED'
+  | 'PAID'
 
-export type JobType =
+export type ConfirmationOutcome = 'client' | 'supervisor' | 'auto'
+
+export type TradeType =
   | 'Bricklaying'
   | 'Plastering'
   | 'Tiling'
-  | 'Foundation'
-  | 'Repairs'
-  | 'Renovation'
-  | 'General Labour'
+  | 'Painting'
+  | 'Plumbing'
+  | 'Electrical'
+  | 'Carpentry'
 
-export const JOB_TYPES: JobType[] = [
+export const TRADES: TradeType[] = [
   'Bricklaying',
   'Plastering',
   'Tiling',
-  'Foundation',
-  'Repairs',
-  'Renovation',
-  'General Labour',
+  'Painting',
+  'Plumbing',
+  'Electrical',
+  'Carpentry',
 ]
 
 export type DisputeReason =
-  | 'Not for work'
-  | 'Wrong amount'
-  | 'Duplicate entry'
+  | 'Work not done'
+  | 'Incomplete day'
+  | 'Wrong worker'
   | 'Other'
 
 export const DISPUTE_REASONS: DisputeReason[] = [
-  'Not for work',
-  'Wrong amount',
-  'Duplicate entry',
+  'Work not done',
+  'Incomplete day',
+  'Wrong worker',
   'Other',
 ]
 
@@ -47,91 +54,105 @@ export interface Worker {
   slug: string
   name: string
   phone: string
-  trade: string
+  trade: TradeType
+  area: string
   bankName: string
   bankAccountNumber: string
   pagaAccountNumber: string
-  accountReference: string
-  paymentLink: string
+  telegramHandle: string
+  available: boolean
 }
 
-export interface Job {
+export interface JobDay {
+  dayNumber: number
+  amountKobo: number
+  status: DayStatus
+  outcome?: ConfirmationOutcome
+  doneAt?: string
+  releaseAt?: string
+  decidedBy?: string
+  decidedAt?: string
+}
+
+export interface EscrowJob {
   id: string
-  workerId: string
-  clientId?: string
+  clientId: string
   clientName: string
   clientToken: string
-  amount: number
-  jobType?: JobType
-  grade: EvidenceGrade
+  workerId: string
+  workerName: string
+  supervisorName?: string
+  supervisorPhone?: string
+  trade: TradeType
+  description: string
+  area: string
+  totalKobo: number
+  daysCount: number
   status: JobStatus
-  createdAt: string
-  confirmedAt?: string
+  fundingAccountNumber: string
+  fundingLink: string
+  days: JobDay[]
   receiptId?: string
-  confirmToken?: string
-  payerBankName?: string
-  payerAccountNumber?: string
-  payerRawName?: string
-  needsPayerLink?: boolean
+  createdAt: string
   flaggedCircular?: boolean
 }
 
 export interface ScoreComponent {
-  key: 'unique_payers' | 'repeat_clients' | 'active_months' | 'evidence_quality' | 'deductions'
+  key: 'unique_payers' | 'repeat_clients' | 'active_months' | 'confirmation_quality' | 'deductions'
   label: string
   points: number
   maxPoints: number
   detail: string
-  relatedJobIds: string[]
 }
 
 export interface ClientTokenSummary {
   token: string
   displayLabel: string
   phoneVerified: boolean
-  confirmedCount: number
+  confirmedDays: number
+  autoReleasedDays: number
   monthsActive: number
-  totalAmount: number
+  totalNaira: number
 }
 
-export interface GradeMixItem {
-  grade: EvidenceGrade
+export interface OutcomeMixItem {
+  outcome: ConfirmationOutcome
   count: number
-  amount: number
+  amountNaira: number
   percentage: number
 }
 
 export interface ActiveMonthCell {
   month: string
   label: string
-  confirmedCount: number
-  totalAmount: number
+  confirmedDays: number
+  totalNaira: number
 }
 
 export interface ReportPayload {
   reportToken: string
-  worker: Pick<Worker, 'id' | 'name' | 'trade'>
+  worker: Pick<Worker, 'id' | 'name' | 'trade' | 'area'>
   lenderName: string
   generatedAt: string
   expiresAt: string
   score: number
   band: string
   components: ScoreComponent[]
-  gradeMix: GradeMixItem[]
+  outcomeMix: OutcomeMixItem[]
   activeMonths: ActiveMonthCell[]
   clientTokens: ClientTokenSummary[]
-  jobs: Job[]
+  jobs: EscrowJob[]
   circularFlags: string[]
   signedSnapshot: {
     workerId: string
     standingTier: string
     standingScore: number
     signals: {
-      confirmedJobs: number
+      confirmedDays: number
+      autoReleasedDays: number
       uniqueClients: number
       activeMonths: number
-      totalConfirmedNaira: number
-      cashSharePercent: number
+      totalPaidNaira: number
     }
     signedAt: string
     signature: string
@@ -140,13 +161,12 @@ export interface ReportPayload {
 
 export interface PagaEventLog {
   id: string
-  eventType: 'FUNDING_CALLBACK' | 'PAYMENT_REQUEST_CALLBACK'
+  eventType: 'ESCROW_FUNDED' | 'DAY_PAYOUT' | 'TELEGRAM_CALLBACK'
   reference: string
   idempotencyKey: string
   hashValid: boolean
   reconcileVerified: boolean
-  idempotentDuplicate: boolean
-  amount: number
+  amountNaira: number
   payerName?: string
   receivedAt: string
   outcome: string
@@ -155,29 +175,14 @@ export interface PagaEventLog {
 export interface DisputeRecord {
   id: string
   jobId: string
+  dayNumber: number
   workerName: string
   clientToken: string
-  amount: number
+  amountNaira: number
   reason: DisputeReason
-  raisedBy: 'client' | 'worker'
+  raisedBy: 'client' | 'supervisor'
   status: 'open' | 'upheld' | 'dismissed'
   createdAt: string
-}
-
-export interface PaymentRequestSession {
-  referenceNumber: string
-  workerSlug: string
-  workerName: string
-  amount: number
-  jobType: JobType
-  payerName: string
-  payerPhone: string
-  state: PaymentRequestState
-  pagaTransferAccount: string
-  pagaTransferBank: string
-  ussdCode: string
-  expiresAt: string
-  receiptId?: string
 }
 
 export interface ConsentRecord {
