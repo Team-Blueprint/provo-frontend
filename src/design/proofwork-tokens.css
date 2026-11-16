@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+:root {
+  /* Proofwork colour palette (kept intact) */
+  --pw-bg: hsl(210 33% 99%);
+  --pw-surface: hsl(0 0% 100%);
+  --pw-ink: hsl(222.2 84% 4.9%);
+  --pw-ink-muted: hsl(215.4 16.3% 46.9%);
+  --pw-rule: hsl(214.3 31.8% 91.4%);
+  --pw-rule-strong: hsl(214.3 25% 82%);
+
+  --pw-primary: hsl(214 100% 22%);
+  --pw-primary-hover: hsl(214 100% 17%);
+  --pw-primary-tint: hsl(210 40% 96.1%);
+
+  --pw-brick: hsl(33 100% 50%);
+
+  --pw-success: #1E7B4B;
+  --pw-success-tint: #E4F3EA;
+  --pw-warning: #8A5300;
+  --pw-warning-tint: #FFF3DC;
+  --pw-critical: #B3261E;
+  --pw-critical-tint: #FBE9E7;
+  --pw-info: #2B5BA8;
+  --pw-info-tint: #E6EEF9;
+
+  --pw-grade-1: var(--pw-primary);
+  --pw-grade-2: var(--pw-info);
+  --pw-grade-3: var(--pw-ink-muted);
+
+  /* Drocsid shape, spacing, shadow, and motion tokens */
+  --pw-radius-xs: 5px;
+  --pw-radius-sm: 8px;
+  --pw-radius-md: 13px;
+  --pw-radius-lg: 22px;
+  --pw-radius-xl: 36px;
+  --pw-tap-min: 44px;
+  --pw-tap-preferred: 48px;
+  --pw-shadow-card: 0px 3px 1px 0px rgba(48, 49, 39, 0.01), 0px 18px 60px 0px rgba(36, 38, 19, 0.04);
+  --pw-shadow-lift: 0px 5px 18px 0px rgba(41, 42, 38, 0.16);
+  --pw-shadow-sheet: 0px 24px 70px 0px rgba(0, 0, 0, 0.18);
+
+  --pw-motion-fast: 150ms;
+  --pw-motion-sheet: 200ms;
+  --pw-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Drocsid typography scale with DM Sans Variable */
+  --pw-font-heading: "DM Sans Variable", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --pw-font-sans: "DM Sans Variable", "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --pw-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --background: var(--pw-bg);
+  --foreground: var(--pw-ink);
+  --card: var(--pw-surface);
+  --card-foreground: var(--pw-ink);
+  --popover: var(--pw-surface);
+  --popover-foreground: var(--pw-ink);
+  --primary: var(--pw-primary);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--pw-primary-tint);
+  --secondary-foreground: var(--pw-ink);
+  --muted: hsl(210 30% 96%);
+  --muted-foreground: var(--pw-ink-muted);
+  --accent: var(--pw-primary-tint);
+  --accent-foreground: var(--pw-ink);
+  --destructive: var(--pw-critical);
+  --destructive-foreground: #FFFFFF;
+  --border: var(--pw-rule);
+  --input: var(--pw-rule);
+  --ring: var(--pw-primary);
+  --radius: var(--pw-radius-sm);
+}
+
+body {
+  background: var(--pw-bg);
+  color: var(--pw-ink);
+  font-family: var(--pw-font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  caret-color: var(--pw-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--pw-font-heading);
+  letter-spacing: -0.025em;
+}
+
+::selection {
+  background: var(--pw-primary);
+  color: #FFFFFF;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+/* Keep keyboard focus visible on buttons/links, but never on inputs/selects/textareas */
+:focus-visible {
+  outline: 2px solid var(--pw-primary);
+  outline-offset: 2px;
+}
+
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  body {
+    background: #FFFFFF;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-pw-brick: var(--pw-brick);
+  --color-pw-success: var(--pw-success);
+  --color-pw-success-tint: var(--pw-success-tint);
+  --color-pw-warning: var(--pw-warning);
+  --color-pw-warning-tint: var(--pw-warning-tint);
+  --color-pw-critical: var(--pw-critical);
+  --color-pw-critical-tint: var(--pw-critical-tint);
+  --color-pw-info: var(--pw-info);
+  --color-pw-info-tint: var(--pw-info-tint);
+  --color-pw-grade-1: var(--pw-grade-1);
+  --color-pw-grade-2: var(--pw-grade-2);
+  --color-pw-grade-3: var(--pw-grade-3);
+
+  --font-sans: var(--pw-font-sans);
+  --font-mono: var(--pw-font-mono);
+
+  --radius-sm: var(--pw-radius-sm);
+  --radius-md: var(--pw-radius-md);
+  --radius-lg: var(--pw-radius-lg);
+}

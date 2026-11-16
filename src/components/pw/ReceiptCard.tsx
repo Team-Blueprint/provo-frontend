@@ -1,0 +1,93 @@
+import { CheckCircle, Printer, ShareNetwork } from '@phosphor-icons/react'
+import type { EvidenceGrade, JobType } from '@/api/types'
+import { formatShortDate } from '@/lib/format'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { AmountText } from './AmountText'
+import { GradeBadge } from './GradeBadge'
+
+interface ReceiptCardProps {
+  receiptId: string
+  workerName: string
+  clientDisplay: string
+  amount: number
+  jobType: JobType
+  grade: EvidenceGrade
+  confirmedAt: string
+}
+
+export function ReceiptCard({
+  receiptId,
+  workerName,
+  clientDisplay,
+  amount,
+  jobType,
+  grade,
+  confirmedAt,
+}: ReceiptCardProps) {
+  return (
+    <Card className="p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-sm font-medium text-[var(--pw-success)]">
+            <CheckCircle weight="fill" className="h-4 w-4" aria-hidden="true" />
+            <span>Confirmed receipt</span>
+          </div>
+          <p className="font-mono text-xs text-muted-foreground">{receiptId}</p>
+        </div>
+        <GradeBadge grade={grade} />
+      </div>
+
+      <div className="space-y-3 text-sm">
+        <div className="flex items-baseline justify-between">
+          <span className="text-muted-foreground">Amount</span>
+          <AmountText amount={amount} size="lg" />
+        </div>
+        <div className="flex items-baseline justify-between">
+          <span className="text-muted-foreground">Worker</span>
+          <span className="font-medium text-foreground">{workerName}</span>
+        </div>
+        <div className="flex items-baseline justify-between">
+          <span className="text-muted-foreground">Client</span>
+          <span className="font-medium text-foreground">{clientDisplay}</span>
+        </div>
+        <div className="flex items-baseline justify-between">
+          <span className="text-muted-foreground">Job type</span>
+          <span className="font-medium text-foreground">{jobType}</span>
+        </div>
+        <div className="flex items-baseline justify-between">
+          <span className="text-muted-foreground">Date</span>
+          <span className="font-medium text-foreground">{formatShortDate(confirmedAt)}</span>
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-2 no-print">
+        <Button
+          variant="secondary"
+          size="md"
+          className="flex-1"
+          onClick={() => window.print()}
+        >
+          <Printer className="h-4 w-4" aria-hidden="true" />
+          <span>Print</span>
+        </Button>
+        <Button
+          variant="secondary"
+          size="md"
+          className="flex-1"
+          onClick={() => {
+            if (navigator.share) {
+              navigator.share({
+                title: `Proofwork Receipt ${receiptId}`,
+                text: `${workerName} - ${jobType} (${receiptId})`,
+              })
+            }
+          }}
+        >
+          <ShareNetwork className="h-4 w-4" aria-hidden="true" />
+          <span>Share</span>
+        </Button>
+      </div>
+    </Card>
+  )
+}
