@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft } from '@phosphor-icons/react'
+import { ArrowLeft } from 'reicon-react'
 import type { JobType } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'

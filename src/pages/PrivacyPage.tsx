@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ShieldCheck } from '@phosphor-icons/react'
+import { ArrowLeft, ShieldCheck } from 'reicon-react'
 import { Card } from '@/components/ui/card'
 
 const SHORT_RULES = [
@@ -58,7 +58,7 @@ export function PrivacyPage() {
       <main className="mx-auto max-w-4xl px-4 py-14 space-y-16">
         <section className="text-center space-y-4">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-primary">
-            <ShieldCheck weight="fill" className="h-3.5 w-3.5" aria-hidden="true" />
+            <ShieldCheck weight="Filled" className="h-3.5 w-3.5" aria-hidden="true" />
             <span>NDPA-aligned by design</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-foreground">

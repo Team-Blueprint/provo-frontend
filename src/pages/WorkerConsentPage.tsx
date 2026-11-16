@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ShieldCheck } from '@phosphor-icons/react'
+import { ArrowLeft, ShieldCheck } from 'reicon-react'
 import { api } from '@/api/client'
 import { messages } from '@/messages/en'
 import { Button } from '@/components/ui/button'
@@ -39,7 +39,7 @@ export function WorkerConsentPage() {
       <main className="mx-auto max-w-xl px-4 py-8">
         <Card className="p-6 space-y-5">
           <div className="flex items-center gap-2 text-primary">
-            <ShieldCheck weight="fill" className="h-5 w-5" aria-hidden="true" />
+            <ShieldCheck weight="Filled" className="h-5 w-5" aria-hidden="true" />
             <span className="text-sm font-medium">Worker consent</span>
           </div>
 

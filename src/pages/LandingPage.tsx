@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  AlertCircle,
   ArrowRight,
   CheckCircle,
   Play,
   ShieldCheck,
-  WarningCircle,
-} from '@phosphor-icons/react'
+} from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { AmountText } from '@/components/pw/AmountText'
@@ -163,7 +163,7 @@ export function LandingPage() {
               </Link>
               <a href="#how-it-works">
                 <Button variant="secondary" className="w-full sm:w-auto rounded-full">
-                  <Play weight="fill" className="h-3.5 w-3.5" aria-hidden="true" />
+                  <Play weight="Filled" className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>See how it works</span>
                 </Button>
               </a>
@@ -245,7 +245,7 @@ export function LandingPage() {
                   className={`rounded-[var(--pw-radius-sm)] border border-background/15 bg-background/5 p-5 space-y-2 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:rotate-0 hover:-translate-y-1 ${item.tilt}`}
                 >
                   <div className="flex items-center gap-2 text-sm font-medium text-background">
-                    <WarningCircle className="h-4 w-4 text-[var(--pw-brick)] shrink-0" />
+                    <AlertCircle className="h-4 w-4 text-[var(--pw-brick)] shrink-0" />
                     <span>{item.title}</span>
                   </div>
                   <p className="text-xs text-background/70 pl-6 leading-relaxed">{item.note}</p>
@@ -266,7 +266,7 @@ export function LandingPage() {
                 >
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <CheckCircle weight="fill" className="h-4 w-4 text-primary shrink-0" />
+                      <CheckCircle weight="Filled" className="h-4 w-4 text-primary shrink-0" />
                       <span>{item.title}</span>
                     </div>
                     <div className="rounded-[var(--pw-radius-sm)] border border-border bg-background px-3 py-2 font-mono text-xs text-foreground">
@@ -377,7 +377,7 @@ export function LandingPage() {
 
         <section className="rounded-[var(--pw-radius-lg)] bg-primary text-primary-foreground p-8 sm:p-12 text-center space-y-5">
           <div className="inline-flex items-center gap-1.5 text-xs font-medium opacity-85">
-            <ShieldCheck weight="fill" className="h-4 w-4" aria-hidden="true" />
+            <ShieldCheck weight="Filled" className="h-4 w-4" aria-hidden="true" />
             <span>Built on PagaEngine</span>
           </div>
           <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight">

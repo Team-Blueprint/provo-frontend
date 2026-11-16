@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { WifiSlash } from '@phosphor-icons/react'
+import { WifiOff } from 'reicon-react'
 
 export function OfflineBanner({ forceOffline = false }: { forceOffline?: boolean }) {
   const [offline, setOffline] = useState(!navigator.onLine)
@@ -22,7 +22,7 @@ export function OfflineBanner({ forceOffline = false }: { forceOffline?: boolean
       role="alert"
       className="flex items-center gap-2 border-b border-[var(--pw-warning)]/30 bg-[var(--pw-warning-tint)] px-4 py-2.5 text-sm text-foreground"
     >
-      <WifiSlash className="h-4 w-4 shrink-0 text-[var(--pw-warning)]" aria-hidden="true" />
+      <WifiOff className="h-4 w-4 shrink-0 text-[var(--pw-warning)]" aria-hidden="true" />
       <span>You are offline. You can read your record, but confirming or paying needs a connection.</span>
     </div>
   )

@@ -1,4 +1,4 @@
-import { CheckCircle, Printer, ShareNetwork } from '@phosphor-icons/react'
+import { CheckCircle, Printer, Share } from 'reicon-react'
 import type { EvidenceGrade, JobType } from '@/api/types'
 import { formatShortDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,7 @@ export function ReceiptCard({
       <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-sm font-medium text-[var(--pw-success)]">
-            <CheckCircle weight="fill" className="h-4 w-4" aria-hidden="true" />
+            <CheckCircle weight="Filled" className="h-4 w-4" aria-hidden="true" />
             <span>Confirmed receipt</span>
           </div>
           <p className="font-mono text-xs text-muted-foreground">{receiptId}</p>
@@ -84,7 +84,7 @@ export function ReceiptCard({
             }
           }}
         >
-          <ShareNetwork className="h-4 w-4" aria-hidden="true" />
+          <Share className="h-4 w-4" aria-hidden="true" />
           <span>Share</span>
         </Button>
       </div>
