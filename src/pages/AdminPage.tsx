@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, CheckCircle, ShieldWarning } from '@phosphor-icons/react'
+import { ArrowLeft, CheckCircle, ShieldAlert } from 'reicon-react'
 import { api } from '@/api/client'
 import type { DisputeRecord, PagaEventLog } from '@/api/types'
 import { formatNaira, formatShortDate } from '@/lib/format'
@@ -99,9 +99,9 @@ export function AdminPage() {
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
                     {evt.hashValid ? (
-                      <CheckCircle weight="fill" className="h-4 w-4 text-[var(--pw-success)]" />
+                      <CheckCircle weight="Filled" className="h-4 w-4 text-[var(--pw-success)]" />
                     ) : (
-                      <ShieldWarning weight="fill" className="h-4 w-4 text-[var(--pw-critical)]" />
+                      <ShieldAlert weight="Filled" className="h-4 w-4 text-[var(--pw-critical)]" />
                     )}
                     <span className="font-mono text-xs">{evt.reference}</span>
                     <span className="text-xs text-muted-foreground">{evt.eventType}</span>

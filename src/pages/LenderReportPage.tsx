@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Check, Code, Copy, Printer, ShieldCheck, Warning } from '@phosphor-icons/react'
+import { ArrowLeft, Check, Code, Copy, Printer, ShieldCheck, TriangleWarning } from 'reicon-react'
 import { api } from '@/api/client'
 import type { EvidenceGrade, ReportPayload } from '@/api/types'
 import { formatNaira, formatShortDate, getTierDetails } from '@/lib/format'
@@ -61,7 +61,7 @@ export function LenderReportPage() {
             <Card className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                  <ShieldCheck weight="fill" className="h-4 w-4" aria-hidden="true" />
+                  <ShieldCheck weight="Filled" className="h-4 w-4" aria-hidden="true" />
                   <span>Consented Lender Report · {report.lenderName}</span>
                 </div>
                 <h1 className="text-2xl font-semibold text-foreground">
@@ -88,7 +88,7 @@ export function LenderReportPage() {
             {report.circularFlags.length > 0 && (
               <Card className="border-[var(--pw-critical)]/40 bg-[var(--pw-critical-tint)] p-4 space-y-1">
                 <div className="flex items-center gap-2 text-sm font-medium text-[var(--pw-critical)]">
-                  <Warning weight="fill" className="h-4 w-4" aria-hidden="true" />
+                  <TriangleWarning weight="Filled" className="h-4 w-4" aria-hidden="true" />
                   <span>Circular-flow flag</span>
                 </div>
                 {report.circularFlags.map((flag) => (

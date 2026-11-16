@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import {
-  ArrowClockwise,
-  ChatCircleText,
+  ChatLine,
   Flask,
   Lightning,
-  ShieldWarning,
+  Refresh,
+  ShieldAlert,
   X,
-} from '@phosphor-icons/react'
+} from 'reicon-react'
 import { api } from '@/api/client'
 import { resetDemoState } from '@/api/mockAdapter'
 import { Button } from '@/components/ui/button'
@@ -99,7 +99,7 @@ export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
                 className="w-full justify-start"
                 onClick={() => run(() => api.simulateFundingCallback({ invalidHash: true }))}
               >
-                <ShieldWarning className="h-4 w-4 text-[var(--pw-critical)]" aria-hidden="true" />
+                <ShieldAlert className="h-4 w-4 text-[var(--pw-critical)]" aria-hidden="true" />
                 <span>Send invalid hash callback</span>
               </Button>
               <Button
@@ -113,7 +113,7 @@ export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
                   window.dispatchEvent(new CustomEvent('proofwork:demo-updated'))
                 }}
               >
-                <ArrowClockwise className="h-4 w-4" aria-hidden="true" />
+                <Refresh className="h-4 w-4" aria-hidden="true" />
                 <span>Reset demo data</span>
               </Button>
             </div>
@@ -121,7 +121,7 @@ export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
             <div className="space-y-2.5 text-xs">
               <div className="rounded-[var(--pw-radius-md)] border border-border bg-muted/40 p-2.5 space-y-1">
                 <div className="flex items-center gap-1.5 font-medium text-foreground">
-                  <ChatCircleText className="h-3.5 w-3.5 text-[var(--pw-success)]" />
+                  <ChatLine className="h-3.5 w-3.5 text-[var(--pw-success)]" />
                   <span>WhatsApp to Emem (Worker)</span>
                 </div>
                 <p className="text-muted-foreground">
@@ -131,7 +131,7 @@ export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
               </div>
               <div className="rounded-[var(--pw-radius-md)] border border-border bg-muted/40 p-2.5 space-y-1">
                 <div className="flex items-center gap-1.5 font-medium text-foreground">
-                  <ChatCircleText className="h-3.5 w-3.5 text-primary" />
+                  <ChatLine className="h-3.5 w-3.5 text-primary" />
                   <span>SMS to Client (No app needed)</span>
                 </div>
                 <p className="text-muted-foreground">

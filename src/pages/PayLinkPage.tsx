@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { CheckCircle, Clock, ShieldCheck } from '@phosphor-icons/react'
+import { CheckCircle, Clock, ShieldCheck } from 'reicon-react'
 import { api } from '@/api/client'
 import type { JobType, PaymentRequestSession } from '@/api/types'
 import { messages } from '@/messages/en'
@@ -161,7 +161,7 @@ export function PayLinkPage() {
             {session.state === 'pending' && (
               <Card className="p-5 space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-[var(--pw-warning)]">
-                  <Clock weight="fill" className="h-4 w-4" aria-hidden="true" />
+                  <Clock weight="Filled" className="h-4 w-4" aria-hidden="true" />
                   <span>{messages.payment.pending}</span>
                 </div>
 

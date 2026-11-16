@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  AlertCircle,
   ArrowLeft,
   Check,
   Copy,
   FileText,
-  LinkSimple,
+  Link as LinkIcon,
   Plus,
-  UserPlus,
-  WarningCircle,
-} from '@phosphor-icons/react'
+  UserAdd,
+} from 'reicon-react'
 import { api } from '@/api/client'
 import type { Job, JobStatus, JobType, ReportPayload, Worker } from '@/api/types'
 import { formatNaira, getTierDetails } from '@/lib/format'
@@ -155,8 +155,8 @@ export function WorkerPage() {
                 className="border-[var(--pw-warning)]/40 bg-[var(--pw-warning-tint)] p-4 space-y-3"
               >
                 <div className="flex items-start gap-2.5">
-                  <WarningCircle
-                    weight="fill"
+                  <AlertCircle
+                    weight="Filled"
                     className="h-5 w-5 shrink-0 text-[var(--pw-warning)] mt-0.5"
                     aria-hidden="true"
                   />
@@ -176,7 +176,7 @@ export function WorkerPage() {
                   className="w-full sm:w-auto"
                   onClick={() => setLinkingJob(job)}
                 >
-                  <UserPlus className="h-4 w-4" aria-hidden="true" />
+                  <UserAdd className="h-4 w-4" aria-hidden="true" />
                   <span>Link client &amp; send confirmation</span>
                 </Button>
               </Card>
@@ -227,7 +227,7 @@ export function WorkerPage() {
                         setTimeout(() => setCopiedLink(false), 1500)
                       }}
                     >
-                      {copiedLink ? <Check className="h-4 w-4" /> : <LinkSimple className="h-4 w-4" />}
+                      {copiedLink ? <Check className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
                     </Button>
                     <Link to={worker.paymentLink}>
                       <Button size="sm">Open</Button>

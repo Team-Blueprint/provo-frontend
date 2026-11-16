@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle, Coins, Info, ShieldCheck } from '@phosphor-icons/react'
+import { CheckCircle, Coins, InfoCircle, ShieldCheck } from 'reicon-react'
 import type { EvidenceGrade } from '@/api/types'
 import { messages } from '@/messages/en'
 import { cn } from '@/lib/utils'
@@ -22,11 +22,11 @@ export function GradeBadge({ grade, size = 'md', showHelp = false }: GradeBadgeP
 
   const icon =
     grade === 1 ? (
-      <ShieldCheck weight="fill" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      <ShieldCheck weight="Filled" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
     ) : grade === 2 ? (
-      <CheckCircle weight="bold" className="h-3.5 w-3.5 shrink-0 text-[var(--pw-grade-2)]" aria-hidden="true" />
+      <CheckCircle weight="Filled" className="h-3.5 w-3.5 shrink-0 text-[var(--pw-grade-2)]" aria-hidden="true" />
     ) : (
-      <Coins weight="regular" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      <Coins className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
     )
 
   return (
@@ -48,7 +48,7 @@ export function GradeBadge({ grade, size = 'md', showHelp = false }: GradeBadgeP
             aria-label={`Explain ${copy.label}`}
             className="ml-0.5 inline-flex items-center justify-center rounded-full opacity-80 hover:opacity-100 cursor-pointer"
           >
-            <Info className="h-3.5 w-3.5" />
+            <InfoCircle className="h-3.5 w-3.5" />
           </button>
         )}
       </span>

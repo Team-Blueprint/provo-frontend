@@ -1,4 +1,4 @@
-import { Check, Clock, Flag, PencilSimple, Prohibit, X } from '@phosphor-icons/react'
+import { Check, Clock, Edit2, Flag, Forbidden, X } from 'reicon-react'
 import type { JobStatus } from '@/api/types'
 import { messages } from '@/messages/en'
 import { cn } from '@/lib/utils'
@@ -20,12 +20,12 @@ export function StatusPill({ status }: StatusPillProps) {
   }
 
   const icons: Record<JobStatus, React.ReactNode> = {
-    draft: <PencilSimple className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
+    draft: <Edit2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
     waiting: <Clock className="h-3.5 w-3.5 shrink-0 text-[var(--pw-warning)]" aria-hidden="true" />,
-    confirmed: <Check weight="bold" className="h-3.5 w-3.5 shrink-0 text-[var(--pw-success)]" aria-hidden="true" />,
-    disputed: <Flag weight="fill" className="h-3.5 w-3.5 shrink-0 text-[var(--pw-critical)]" aria-hidden="true" />,
-    expired: <Prohibit className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
-    failed: <X weight="bold" className="h-3.5 w-3.5 shrink-0 text-[var(--pw-critical)]" aria-hidden="true" />,
+    confirmed: <Check weight="Filled" className="h-3.5 w-3.5 shrink-0 text-[var(--pw-success)]" aria-hidden="true" />,
+    disputed: <Flag weight="Filled" className="h-3.5 w-3.5 shrink-0 text-[var(--pw-critical)]" aria-hidden="true" />,
+    expired: <Forbidden className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
+    failed: <X weight="Filled" className="h-3.5 w-3.5 shrink-0 text-[var(--pw-critical)]" aria-hidden="true" />,
   }
 
   return (
