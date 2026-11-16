@@ -1,0 +1,70 @@
+# Proofwork
+
+> Proofwork turns client payments into payer-confirmed income records that Nigerian lenders can trust. Informal workers never self-certify: a client pays, a client confirms, and only then does a job count.
+
+Proofwork is a report provider for microfinance banks and fintechs. It is not a lender, not a job marketplace, and it never holds the worker's money. Each worker receives a dedicated Paga Subsidiary Account (a 10-digit NUBAN) and a payment link. Paga auto-sweeps every payment straight to the worker's bank account, so Proofwork stays a zero-custody verification layer.
+
+A payment creates a pending job record. The client confirms the job type in one tap, with no app and no account. That confirmation turns the pending record into a confirmed job with a receipt, and the confirmed jobs accumulate into a consented income report a lender can underwrite.
+
+## Core rule
+
+- A job the worker enters himself stays a draft and counts for zero.
+- A confirmed record requires both a client payment and a client confirmation.
+- Clients confirm through a link or SMS. No download, no sign-up.
+- Circular payment patterns and disputes are flagged openly in the report.
+
+## Evidence grades
+
+Every job carries the grade of evidence behind it. The grade is always visible to the worker and the lender.
+
+- **Grade 1, paid via link:** the client paid through the Proofwork link with a verified phone number. Full score weight.
+- **Grade 2, transfer confirmed:** the client transferred to the worker's dedicated Paga account and confirmed the job. Full score weight.
+- **Grade 3, cash confirmed:** the worker logged a cash job and the client confirmed it. Capped at 20% of the score and never enough for a loan on its own.
+
+## How it works
+
+1. The worker signs up and receives a Paga Subsidiary Account and a payment link.
+2. The client pays through the link or by bank transfer to the NUBAN.
+3. Paga's callback is verified against `x-paga-hash-v3`, deduplicated by idempotency key, and reconciled against `/status`.
+4. The client confirms the job type in one tap and receives a receipt.
+5. With the worker's consent, a lender opens an expiring report and reads a signed snapshot.
+
+## What a lender sees
+
+- Confirmed jobs and their evidence grades.
+- Repeat clients, counted across active months.
+- A 0 to 100 income score with a band label: Early record, Building record, Steady record, Strong record.
+- Client identities tokenized until an active dispute requires release with the client's consent.
+- An Ed25519-signed JSON snapshot that can be copied for underwriting.
+
+## Demo surfaces
+
+This site is a working demo built for TechIgnite 2026. Records are seeded around one persona, Emem Bassey, a bricklayer in Uyo.
+
+- [Landing page](/): product overview, evidence grades, FAQ.
+- [Worker view](/worker): Emem's record, jobs, score, and payment link.
+- [Consent flow](/worker/consent): the worker approves sharing before a report opens.
+- [Client pay link](/pay/emem-uyo): what a client sees when paying.
+- [One-tap confirmation](/confirm/tok_confirm_110): the client confirms a job and issues a receipt.
+- [Lender report](/report/rep_emem_lapo_2026): tokenized income report and signed snapshot.
+- [Admin audit ledger](/admin): disputes, flagged records, and delivery failures.
+- [Design system](/design-system): tokens, components, and evidence-grade rules.
+
+## Product boundaries
+
+- Not a lender. Loan disbursement and underwriting are mocked in the demo.
+- Not a marketplace or escrow service.
+- No custody of funds. Paga settles to the worker's bank account.
+- No self-reported income in the score.
+
+## Stack and status
+
+- React, Vite, TypeScript, Tailwind CSS v4.
+- Paga Collect API for payment requests and Paga Subsidiary Accounts for dedicated NUBANs.
+- Demo status: seeded data, WhatsApp and USSD flows mocked, Paga sandbox integration.
+
+## Optional
+
+- [Frontend repository](https://github.com/Team-Blueprint/proofwork-frontend)
+- [Privacy policy](/privacy)
+- [Terms of use](/terms)
