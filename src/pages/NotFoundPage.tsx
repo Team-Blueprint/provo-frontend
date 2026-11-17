@@ -11,9 +11,14 @@ const WAYFINDER_LINKS = [
     to: '/worker',
   },
   {
-    title: 'Client Escrow',
-    description: 'Create an escrow-backed job, lock funds via Paga, and confirm or dispute days.',
+    title: 'Employer Portal',
+    description: 'Create a job, lock funds via Paga, and confirm or dispute days.',
     to: '/client',
+  },
+  {
+    title: 'Employer Jobs',
+    description: 'All employer jobs, daily schedules, NUBAN accounts, and supervisor links.',
+    to: '/client/jobs',
   },
   {
     title: 'Supervisor View',
@@ -22,7 +27,7 @@ const WAYFINDER_LINKS = [
   },
   {
     title: 'USSD Simulator',
-    description: 'Interactive *347*900# feature-phone dialer for marking days done and checking scores.',
+    description: 'Interactive *123# feature-phone dialer for marking days done and checking scores.',
     to: '/ussd',
   },
   {
@@ -48,7 +53,7 @@ export function NotFoundPage() {
             className="inline-block h-2.5 w-2.5 rounded-[3px] bg-[var(--pw-brick)]"
             aria-hidden="true"
           />
-          <span>Proofwork</span>
+          <span>Provo</span>
         </Link>
         <Link to="/">
           <Button size="sm" variant="secondary">
@@ -65,7 +70,7 @@ export function NotFoundPage() {
             This page isn’t in the ledger.
           </h1>
           <p className="text-base text-muted-foreground max-w-xl">
-            The link may have expired or moved. Pick one of the live Proofwork surfaces below.
+            The link may have expired or moved. Pick one of the live Provo surfaces below.
           </p>
         </div>
 
@@ -76,7 +81,7 @@ export function NotFoundPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Find a surface (worker, pay, lender, confirm)..."
-            aria-label="Search Proofwork surfaces"
+            aria-label="Search Provo surfaces"
             className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/65 focus:outline-none focus:ring-0"
           />
         </div>
@@ -102,7 +107,7 @@ export function NotFoundPage() {
       </main>
 
       <footer className="mx-auto w-full max-w-3xl text-xs text-muted-foreground flex items-center justify-between border-t border-border pt-6">
-        <span>Proofwork · TechIgnite 2026</span>
+        <span>Provo · TechIgnite 2026</span>
         <Link to="/privacy" className="hover:text-foreground">
           Privacy Policy
         </Link>

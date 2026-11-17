@@ -1,8 +1,12 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { DemoSimulator } from '@/components/pw/DemoSimulator'
 import { AdminPage } from '@/pages/AdminPage'
+import { CheckoutPage } from '@/pages/CheckoutPage'
+import { ClientJobsPage } from '@/pages/ClientJobsPage'
 import { ClientPage } from '@/pages/ClientPage'
 import { DesignSystemPage } from '@/pages/DesignSystemPage'
+import { DocsPage } from '@/pages/DocsPage'
 import { LandingPage } from '@/pages/LandingPage'
 import { LegalPage } from '@/pages/LegalPage'
 import { LenderReportPage } from '@/pages/LenderReportPage'
@@ -16,20 +20,40 @@ import { WorkerJobsPage } from '@/pages/WorkerJobsPage'
 import { WorkerPage } from '@/pages/WorkerPage'
 import { WorkerProfilePage } from '@/pages/WorkerProfilePage'
 import { WorkerSettingsPage } from '@/pages/WorkerSettingsPage'
+import { WorkerShareLinkPage } from '@/pages/WorkerShareLinkPage'
+
+function ScrollToTop() {
+  const { pathname, hash } = useLocation()
+  useEffect(() => {
+    if (!hash) {
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }, [pathname, hash])
+  return null
+}
 
 export function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/docs" element={<DocsPage />} />
+        <Route path="/docs/*" element={<DocsPage />} />
         <Route path="/design-system" element={<DesignSystemPage />} />
         <Route path="/worker" element={<WorkerPage />} />
         <Route path="/worker/jobs" element={<WorkerJobsPage />} />
         <Route path="/worker/consent" element={<WorkerConsentPage />} />
+        <Route path="/worker/share-link" element={<WorkerShareLinkPage />} />
         <Route path="/worker/profile" element={<WorkerProfilePage />} />
         <Route path="/worker/settings" element={<WorkerSettingsPage />} />
         <Route path="/worker/help" element={<WorkerHelpPage />} />
         <Route path="/client" element={<ClientPage />} />
+        <Route path="/client/jobs" element={<ClientJobsPage />} />
+        <Route path="/employer" element={<ClientPage />} />
+        <Route path="/employer/jobs" element={<ClientJobsPage />} />
+        <Route path="/jobs" element={<ClientJobsPage />} />
+        <Route path="/checkout/:jobId" element={<CheckoutPage />} />
         <Route path="/supervisor" element={<SupervisorPage />} />
         <Route path="/ussd" element={<UssdSimulatorPage />} />
         <Route path="/report/:reportToken" element={<LenderReportPage />} />
@@ -37,6 +61,7 @@ export function App() {
         <Route path="/privacy" element={<LegalPage initialPolicy="privacy" />} />
         <Route path="/terms" element={<LegalPage initialPolicy="terms" />} />
         <Route path="/cookies" element={<LegalPage initialPolicy="cookies" />} />
+        <Route path="/ndpa" element={<LegalPage initialPolicy="ndpa" />} />
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

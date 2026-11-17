@@ -41,7 +41,7 @@ export function LenderReportPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-10 py-3.5">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            <span>Proofwork</span>
+            <span>Provo</span>
           </Link>
           <Button size="sm" variant="secondary" onClick={() => window.print()}>
             <Printer className="h-4 w-4" aria-hidden="true" />
@@ -158,7 +158,7 @@ export function LenderReportPage() {
 
             <Card className="p-5 space-y-3">
               <div className="space-y-1">
-                <h2 className="text-lg font-medium text-foreground">Tokenized clients</h2>
+                <h2 className="text-lg font-medium text-foreground">Tokenized employers</h2>
                 <p className="text-xs text-muted-foreground">{messages.report.tokenNote}</p>
               </div>
               <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -184,7 +184,7 @@ export function LenderReportPage() {
 
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-lg font-medium text-foreground">Escrow job ledger</h2>
+                <h2 className="text-lg font-medium text-foreground">Verified job ledger</h2>
                 <div className="flex gap-1.5 no-print">
                   {(['all', 'client', 'supervisor', 'auto'] as const).map((o) => (
                     <button

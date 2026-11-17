@@ -44,9 +44,9 @@
   --pw-motion-sheet: 200ms;
   --pw-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Drocsid typography scale with DM Sans Variable */
-  --pw-font-heading: "DM Sans Variable", "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --pw-font-sans: "DM Sans Variable", "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Drocsid typography scale with Instrument Sans Variable */
+  --pw-font-heading: "Instrument Sans Variable", "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --pw-font-sans: "Instrument Sans Variable", "Instrument Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --pw-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --background: var(--pw-bg);
@@ -110,6 +110,16 @@ textarea:focus,
 textarea:focus-visible {
   outline: none;
   box-shadow: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+[id] {
+  scroll-margin-top: 6rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

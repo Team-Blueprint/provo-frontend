@@ -1,0 +1,39 @@
+---
+title: "Job & day state machines"
+description: "Pure transition functions enforcing every allowed Job and JobDay state change."
+---
+
+All status mutations pass through `transition_job_state()` and `transition_day_state()` in `app/domain/lifecycle.py`. Disallowed transitions raise `InvalidStateTransitionError`. Every transition appends an actor-attributed row to `audit_events`.
+
+## Job lifecycle (`JobStatus`)
+
+```text
+DRAFT ──(REQUEST_FUNDING)──▶ AWAITING_FUNDING ──(PAYMENT_RECEIVED)──▶ FUNDED
+  │                                │                                    │
+  └──(CANCEL)──▶ CANCELLED ◀───────┘                                    ▼
+                                                                   IN_PROGRESS
+                                                                        │
+                                             ┌──(DISPUTE_RAISED)──▶ DISPUTED
+                                             │                          │
+                                             └──(ALL_DAYS_SETTLED)──▶ COMPLETED
+```
+
+| State | Allowed events |
+| :--- | :--- |
+| `DRAFT` | `REQUEST_FUNDING` → `AWAITING_FUNDING`, `CANCEL` → `CANCELLED` |
+| `AWAITING_FUNDING` | `PAYMENT_RECEIVED` → `FUNDED`, `CANCEL` → `CANCELLED` |
+| `FUNDED` | `START_WORK` → `IN_PROGRESS`, `ALL_DAYS_SETTLED` → `COMPLETED`, `CANCEL` → `CANCELLED`, `DISPUTE_RAISED` → `DISPUTED` |
+| `IN_PROGRESS` | `ALL_DAYS_SETTLED` → `COMPLETED`, `DISPUTE_RAISED` → `DISPUTED` |
+| `DISPUTED` | `ALL_DAYS_SETTLED` → `COMPLETED` |
+| `COMPLETED`, `CANCELLED` | Terminal states (no transitions) |
+
+## Work-day lifecycle (`DayStatus`)
+
+| State | Allowed events |
+| :--- | :--- |
+| `PENDING` | `WORKER_DONE` → `DONE_REPORTED` |
+| `DONE_REPORTED` | `CLIENT_CONFIRM` → `CONFIRMED`, `TIMER_EXPIRED` → `AUTO_RELEASED`, `CLIENT_DISPUTE` → `DISPUTED` |
+| `CONFIRMED` | `PAYOUT_SUCCESS` → `PAID` |
+| `AUTO_RELEASED` | `PAYOUT_SUCCESS` → `PAID` |
+| `DISPUTED` | Frozen until admin resolution |
+| `PAID` | Terminal state |

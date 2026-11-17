@@ -1,0 +1,31 @@
+---
+title: "Credibility score (0–100)"
+description: "How Provo's pure scoring function calculates the 0–100 score and assigns tier bands."
+---
+
+The scoring engine (`app/domain/scoring.py`) is a pure, deterministic function over a worker's job and day history. Every point is explained in the report's `reasons` array.
+
+## Score components
+
+| Component | Rule | Max points |
+| :--- | :--- | :--- |
+| **Base verification** | Awarded once at least one confirmed or auto-released day exists | **15 pts** |
+| **Work days quality** | `+2.0 pts` per `CONFIRMED`/`PAID` day (`×0.8` if payer is new to system); `+1.0 pt` per `AUTO_RELEASED` day; `0 pts` for `DISPUTED` | **35 pts** |
+| **Unique verified payers** | `+8.0 pts` per distinct client | **24 pts** |
+| **Repeat clients** | `+12.0 pts` per client with 2 or more separate jobs | **24 pts** |
+| **Active earning months** | `+5.0 pts` per calendar month (`YYYY-MM`) with confirmed work | **15 pts** |
+
+<Note>
+**Single-payer concentration cap:** When total raw day points exceed 25, no single client can contribute more than **35%** of the day-score points. This prevents one friendly payer from artificially inflating an artisan's score.
+</Note>
+
+Total score is clamped to `0–100`.
+
+## Tier bands
+
+| Score range | Backend band | Meaning |
+| :--- | :--- | :--- |
+| `80 – 100` | `TIER_1_EXCELLENT` | Strong record across multiple months and repeat clients |
+| `60 – 79` | `TIER_2_SOLID` | Steady record with active client confirmations |
+| `40 – 59` | `TIER_3_DEVELOPING` | Building record; limited months or client diversity |
+| `0 – 39` | `TIER_4_UNVERIFIED` | Early or disputed record; insufficient verified history |

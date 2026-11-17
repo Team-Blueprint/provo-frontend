@@ -1,0 +1,44 @@
+---
+title: "How it works"
+description: "Follow a 3-day job from upfront NUBAN lock to daily Paga payout and signed lender report."
+---
+
+Every job on Provo follows a four-stage lifecycle across the client, worker, optional supervisor, and lender.
+
+<Steps>
+  <Step title="Client creates and funds the job">
+    A client (or site contractor) selects a trade from the fixed enum (such as `BRICKLAYING`, `PAINTING`, or `PLUMBING`), chooses an artisan or invites one by phone number, and sets `total_kobo` and `days`.
+
+    Calling `POST /jobs/{id}/fund-request` generates a **one-time 10-digit Paga virtual NUBAN** and payment link. The client transfers the full amount from any Nigerian bank (OPay, UBA, Access, GTBank, Kuda). When Paga's signed webhook arrives, the job moves to `FUNDED` and the NUBAN is deactivated.
+  </Step>
+  <Step title="Worker marks each day done">
+    Once the job is `FUNDED`, the artisan can work and report each day (`1..N`) as complete via Telegram, the web workspace, or USSD (`*347*900#`).
+
+    Reporting Day `n` moves the day from `PENDING` to `DONE_REPORTED` and sets `release_at = done_at + 24 hours`.
+  </Step>
+  <Step title="Client or supervisor confirms (or 24h auto-releases)">
+    The client or an assigned site supervisor receives a notification and taps **Confirm** (`POST /jobs/{id}/days/{n}/confirm`).
+
+    Confirming moves the day to `CONFIRMED` and atomically writes a `RELEASED` ledger entry and an outbox `payouts` row in the same database transaction. The payout worker disburses `day.amount_kobo` to the worker's Paga account and marks the day `PAID`.
+
+    If neither party responds within 24 hours, the scheduler transitions the day to `AUTO_RELEASED` and triggers the payout at reduced score weight.
+  </Step>
+  <Step title="Worker shares a signed report with a lender">
+    When the artisan applies for tool or equipment financing, they grant explicit consent (`POST /workers/{id}/shares`) to generate a time-limited report link (`/report/{token}`).
+
+    The lender sees the 0–100 score, tier band, active months, repeat clients, tokenized client IDs (`Client #A1B2`), fraud flags, and receipt verification. Raw client phone numbers are never shown.
+  </Step>
+</Steps>
+
+## Integer kobo math
+
+All monetary amounts are stored and calculated in **integer kobo** (`100 kobo = ₦1`). When a job spans multiple days, daily pay is divided evenly using integer floor division, and any remainder kobo is added to the final day:
+
+```python
+base_daily = total_kobo // days
+remainder = total_kobo % days
+# Day 1..(days-1) = base_daily
+# Day days = base_daily + remainder
+```
+
+This guarantees `SUM(job_days.amount_kobo) == job.total_kobo` with zero floating-point rounding drift.

@@ -38,7 +38,18 @@ interface DemoState {
 function loadState(): DemoState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as DemoState
+    if (raw) {
+      const parsed = JSON.parse(raw) as DemoState
+      const existingIds = new Set((parsed.directory ?? []).map((w) => w.id))
+      const mergedDirectory = [
+        ...(parsed.directory ?? []),
+        ...SEED_WORKERS_DIRECTORY.filter((w) => !existingIds.has(w.id)),
+      ]
+      return {
+        ...parsed,
+        directory: mergedDirectory,
+      }
+    }
   } catch {
     // Fallback to seed
   }
@@ -177,14 +188,14 @@ function computeReport(state: DemoState, reportToken: string): ReportPayload {
       label: 'Unique confirmed payers',
       points: uniquePts,
       maxPoints: 30,
-      detail: `${uniquePayersCount} distinct client(s) with locked & settled days`,
+      detail: `${uniquePayersCount} distinct employer(s) with locked & settled days`,
     },
     {
       key: 'repeat_clients',
-      label: 'Repeat clients across months',
+      label: 'Repeat employers across months',
       points: repeatPts,
       maxPoints: 25,
-      detail: `${repeatClients} client(s) funded jobs in more than one month`,
+      detail: `${repeatClients} employer(s) funded jobs in more than one month`,
     },
     {
       key: 'active_months',
@@ -232,7 +243,7 @@ function computeReport(state: DemoState, reportToken: string): ReportPayload {
   const clientTokens: ClientTokenSummary[] = Array.from(clientStats.entries()).map(
     ([token, info]) => ({
       token,
-      displayLabel: `Client ${token}`,
+      displayLabel: `Employer ${token}`,
       phoneVerified: true,
       confirmedDays: info.confirmedDays,
       autoReleasedDays: info.autoDays,
@@ -283,6 +294,11 @@ function computeReport(state: DemoState, reportToken: string): ReportPayload {
 }
 
 export const mockAdapter = {
+  async getJob(jobId: string): Promise<EscrowJob | null> {
+    const state = loadState()
+    return state.jobs.find((j) => j.id === jobId) ?? null
+  },
+
   async getWorkerDashboard() {
     const state = loadState()
     return {
@@ -293,11 +309,40 @@ export const mockAdapter = {
     }
   },
 
+  async getClientJobs(): Promise<EscrowJob[]> {
+    return loadState().jobs
+  },
+
+  async getSupervisorJobs(): Promise<EscrowJob[]> {
+    return loadState().jobs
+  },
+
   async getAvailableWorkers(trade?: TradeType) {
     const state = loadState()
     return trade
       ? state.directory.filter((w) => w.trade === trade && w.available)
       : state.directory.filter((w) => w.available)
+  },
+
+  async assignSupervisor(input: {
+    jobId: string
+    supervisorName: string
+    supervisorPhone: string
+  }): Promise<EscrowJob | null> {
+    const state = loadState()
+    let updated: EscrowJob | null = null
+    state.jobs = state.jobs.map((j) => {
+      if (j.id !== input.jobId) return j
+      updated = {
+        ...j,
+        supervisorName: input.supervisorName.trim() || undefined,
+        supervisorPhone: input.supervisorPhone.trim() || undefined,
+      }
+      return updated
+    })
+    saveState(state)
+    window.dispatchEvent(new CustomEvent('proofwork:demo-updated'))
+    return updated
   },
 
   async createAndRequestFunding(input: {
@@ -340,7 +385,28 @@ export const mockAdapter = {
     return job
   },
 
-  async simulateFundJob(jobId: string): Promise<EscrowJob> {
+  async getWorkerPaymentLink(workerId: string): Promise<{
+    workerId: string
+    workerName: string
+    accountNumber: string
+    bank: string
+    paymentUrl: string
+    shareText: string
+  } | null> {
+    const state = loadState()
+    const w = state.directory.find((item) => item.id === workerId) ?? state.worker
+    if (!w) return null
+    return {
+      workerId: w.id,
+      workerName: w.name,
+      accountNumber: w.pagaAccountNumber,
+      bank: 'Paga',
+      paymentUrl: `${window.location.origin}/client?worker=${w.id}`,
+      shareText: `Pay ${w.name} via Provo: Transfer to Paga account ${w.pagaAccountNumber}`,
+    }
+  },
+
+  async simulateFundJob(jobId: string, _amountNaira?: number): Promise<EscrowJob> {
     const state = loadState()
     state.jobs = state.jobs.map((j) =>
       j.id === jobId ? { ...j, status: 'FUNDED' } : j,
@@ -576,5 +642,106 @@ export const mockAdapter = {
       )
     }
     saveState(state)
+  },
+
+  async sendWorkerOtp(phone: string) {
+    const cleaned = phone.trim()
+    if (!cleaned) {
+      throw new Error('Enter a valid phone number.')
+    }
+    return { sent: true, demoCode: '123456', phone: cleaned }
+  },
+
+  async sendSignupOtp(input: {
+    name: string
+    phone: string
+    role: 'worker' | 'client'
+    trade?: TradeType
+  }) {
+    const cleaned = input.phone.trim()
+    if (!cleaned) {
+      throw new Error('Enter a valid phone number.')
+    }
+    return { sent: true, demoCode: '123456', phone: cleaned }
+  },
+
+  async resendOtp(phone: string) {
+    return { sent: true, demoCode: '123456', phone }
+  },
+
+  async revokeConsent(token: string) {
+    const state = loadState()
+    state.consents = state.consents.map((c) =>
+      c.reportToken === token ? { ...c, revokedAt: new Date().toISOString() } : c,
+    )
+    saveState(state)
+  },
+
+  async getWorkerSettings(): Promise<{ alertChannel: 'whatsapp' | 'sms' }> {
+    const raw = window.localStorage.getItem('proofwork_alert_channel')
+    return { alertChannel: raw === 'sms' ? 'sms' : 'whatsapp' }
+  },
+
+  async updateWorkerSettings(alertChannel: 'whatsapp' | 'sms') {
+    window.localStorage.setItem('proofwork_alert_channel', alertChannel)
+    return { alertChannel }
+  },
+
+  async verifyReceipt(receiptNumber: string) {
+    return {
+      id: receiptNumber,
+      receipt_number: receiptNumber,
+      job_id: '',
+      issued_at: new Date().toISOString(),
+      receipt_data: {},
+    }
+  },
+
+  async verifyWorkerLogin(input: { phone: string; otp: string }) {
+    if (input.otp.trim() !== '123456') {
+      throw new Error('Invalid code. Enter 123456 for the demo.')
+    }
+    const state = loadState()
+    const normalized = input.phone.replace(/\s+/g, '')
+    const matched = state.directory.find(
+      (w) => w.phone.replace(/\s+/g, '').endsWith(normalized.slice(-10)),
+    )
+    if (matched) {
+      state.worker = matched
+      saveState(state)
+    }
+    window.dispatchEvent(new CustomEvent('proofwork:demo-updated'))
+    return state.worker
+  },
+
+  async verifyWorkerSignup(input: {
+    name: string
+    phone: string
+    trade: TradeType
+    customTrade?: string
+    otp: string
+  }) {
+    if (input.otp.trim() !== '123456') {
+      throw new Error('Invalid code. Enter 123456 for the demo.')
+    }
+    const state = loadState()
+    const formattedPhone = input.phone.trim().startsWith('+')
+      ? input.phone.trim()
+      : `+234 ${input.phone.trim()}`
+    const newWorker: Worker = {
+      ...state.worker,
+      id: `wrk_${Date.now().toString().slice(-4)}`,
+      slug: input.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      name: input.name.trim(),
+      phone: formattedPhone,
+      trade: input.trade,
+      customTrade: input.trade === 'Others' ? input.customTrade?.trim() : undefined,
+      available: true,
+    }
+    state.worker = newWorker
+    state.directory = [newWorker, ...state.directory.filter((w) => w.phone !== formattedPhone)]
+    saveState(state)
+    window.dispatchEvent(new CustomEvent('proofwork:demo-updated'))
+    return newWorker
   },
 }

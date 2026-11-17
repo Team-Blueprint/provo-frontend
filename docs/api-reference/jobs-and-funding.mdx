@@ -1,0 +1,45 @@
+---
+title: "Jobs, funding & daily decisions"
+description: "Create jobs, generate one-time Paga virtual NUBANs, and report or confirm daily work."
+---
+
+## Create a job (`POST /jobs`)
+
+Creates an escrow job draft (`DRAFT`) and pre-computes `job_days` (`1..days`) in integer kobo.
+
+<ParamField body="trade" type="TradeType" required>
+  Fixed trade enum (e.g. `BRICKLAYING`, `PAINTING`, `PLUMBING`).
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Short scope of work (e.g. `"Block wall fence at Shelter Afrique"`).
+</ParamField>
+
+<ParamField body="total_kobo" type="integer" required>
+  Total job pay in integer kobo (e.g. `4500000` for `₦45,000`).
+</ParamField>
+
+<ParamField body="days" type="integer" required>
+  Number of work days (`>= 1`).
+</ParamField>
+
+<ParamField body="worker_id" type="uuid">
+  Optional artisan UUID from `GET /workers/available`.
+</ParamField>
+
+<ParamField body="supervisor_id" type="uuid">
+  Optional site supervisor UUID authorized to confirm/dispute days.
+</ParamField>
+
+## Request funding (`POST /jobs/{job_id}/fund-request`)
+
+Calls Paga Collect to issue a one-time 10-digit virtual NUBAN and Paga payment link, transitioning the job to `AWAITING_FUNDING`.
+
+## Daily lifecycle actions
+
+| Method | Path | Actor | Result |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/jobs/{job_id}/days/{day_number}/done` | Worker | Moves day to `DONE_REPORTED`; starts 24h window |
+| `POST` | `/jobs/{job_id}/days/{day_number}/confirm` | Client or Supervisor | Moves day to `CONFIRMED`; enqueues outbox payout |
+| `POST` | `/jobs/{job_id}/days/{day_number}/dispute` | Client or Supervisor | Moves day to `DISPUTED`; freezes auto-release |
+| `GET` | `/jobs/verify/{receipt_number}` | Public | Verifies completed job receipt |

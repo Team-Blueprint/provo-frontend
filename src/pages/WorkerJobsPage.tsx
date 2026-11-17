@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle } from 'reicon-react'
+import { AngleDown, CheckCircle } from 'reicon-react'
 import { api } from '@/api/client'
 import type { EscrowJob, JobStatus } from '@/api/types'
 import { messages } from '@/messages/en'
@@ -10,11 +10,16 @@ import { WorkerShell } from '@/components/pw/WorkerShell'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
 
+const PAGE_SIZE = 3
+
 export function WorkerJobsPage() {
   const [loading, setLoading] = useState(true)
   const [jobs, setJobs] = useState<EscrowJob[]>([])
   const [filter, setFilter] = useState<'all' | JobStatus>('all')
   const [search, setSearch] = useState('')
+  const [markingKey, setMarkingKey] = useState<string | null>(null)
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({})
+  const [page, setPage] = useState(1)
 
   async function load() {
     setLoading(true)
@@ -40,12 +45,29 @@ export function WorkerJobsPage() {
         : true,
     )
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  useEffect(() => {
+    setPage(1)
+  }, [filter, search])
+
+  function isJobExpanded(job: EscrowJob) {
+    if (job.id in expandedIds) return expandedIds[job.id]
+    return job.status === 'IN_PROGRESS' || job.status === 'FUNDED'
+  }
+
+  function toggleJob(job: EscrowJob) {
+    setExpandedIds((prev) => ({ ...prev, [job.id]: !isJobExpanded(job) }))
+  }
+
   return (
     <WorkerShell searchQuery={search} onSearchChange={setSearch} jobCount={jobs.length}>
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Job records</h1>
         <p className="text-sm text-muted-foreground">
-          Day-by-day escrow schedule and payout outcomes.
+          Day-by-day work schedule and payout outcomes.
         </p>
       </div>
 
@@ -72,59 +94,124 @@ export function WorkerJobsPage() {
           <Skeleton className="h-28 w-full" />
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-8 text-center">
+        <Card className="p-8 text-center space-y-3">
           <p className="text-sm text-muted-foreground">{messages.worker.emptyJobs}</p>
+          {(filter !== 'all' || search.trim() !== '') && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setFilter('all')
+                setSearch('')
+              }}
+            >
+              Clear filters
+            </Button>
+          )}
         </Card>
       ) : (
         <div className="space-y-4">
-          {filtered.map((job) => (
-            <Card key={job.id} className="p-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-semibold text-foreground">
-                      {job.clientName} · {job.trade}
-                    </h2>
-                    <StatusPill status={job.status} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {job.description} · {job.area}
-                  </p>
-                </div>
-                <AmountText amount={Math.round(job.totalKobo / 100)} size="lg" />
-              </div>
-
-              <div className="divide-y divide-border">
-                {job.days.map((day) => (
-                  <div
-                    key={day.dayNumber}
-                    className="py-2.5 first:pt-0 last:pb-0 flex flex-wrap items-center justify-between gap-2"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-semibold">Day {day.dayNumber}</span>
-                      <AmountText amount={Math.round(day.amountKobo / 100)} size="sm" />
-                      <StatusPill status={day.status} />
-                      {day.outcome && <GradeBadge outcome={day.outcome} size="sm" />}
+          {paginated.map((job) => {
+            const expanded = isJobExpanded(job)
+            return (
+              <Card key={job.id} className="overflow-hidden">
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  onClick={() => toggleJob(job)}
+                  className="w-full p-5 flex flex-wrap items-center justify-between gap-3 text-left hover:bg-muted/30 transition-colors cursor-pointer"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-semibold text-foreground">
+                        {job.clientName} · {job.trade}
+                      </h2>
+                      <StatusPill status={job.status} />
                     </div>
-
-                    {day.status === 'PENDING' &&
-                      (job.status === 'FUNDED' || job.status === 'IN_PROGRESS') && (
-                        <Button
-                          size="sm"
-                          onClick={async () => {
-                            await api.markDayDone(job.id, day.dayNumber)
-                            load()
-                          }}
-                        >
-                          <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
-                          <span>Mark done</span>
-                        </Button>
-                      )}
+                    <p className="text-xs text-muted-foreground">
+                      {job.description} · {job.area} · {job.daysCount} days
+                    </p>
                   </div>
-                ))}
+                  <div className="flex items-center gap-3">
+                    <AmountText amount={Math.round(job.totalKobo / 100)} size="lg" />
+                    <AngleDown
+                      className={`h-4 w-4 text-muted-foreground transition-transform duration-150 ${
+                        expanded ? 'rotate-180' : ''
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </div>
+                </button>
+
+                {expanded && (
+                  <div className="border-t border-border px-5 py-4 divide-y divide-border">
+                    {job.days.map((day) => (
+                      <div
+                        key={day.dayNumber}
+                        className="py-2.5 first:pt-0 last:pb-0 flex flex-wrap items-center justify-between gap-2"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-xs font-semibold">Day {day.dayNumber}</span>
+                          <AmountText amount={Math.round(day.amountKobo / 100)} size="sm" />
+                          <StatusPill status={day.status} />
+                          {day.outcome && <GradeBadge outcome={day.outcome} size="sm" />}
+                        </div>
+
+                        {day.status === 'PENDING' &&
+                          (job.status === 'FUNDED' || job.status === 'IN_PROGRESS') && (
+                            <Button
+                              size="sm"
+                              disabled={markingKey === `${job.id}-${day.dayNumber}`}
+                              onClick={async () => {
+                                const key = `${job.id}-${day.dayNumber}`
+                                setMarkingKey(key)
+                                try {
+                                  await api.markDayDone(job.id, day.dayNumber)
+                                  await load()
+                                } finally {
+                                  setMarkingKey(null)
+                                }
+                              }}
+                            >
+                              <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                              <span>
+                                {markingKey === `${job.id}-${day.dayNumber}` ? 'Updating...' : 'Mark done'}
+                              </span>
+                            </Button>
+                          )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )
+          })}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <p className="text-xs text-muted-foreground tabular-nums">
+                Page {currentPage} of {totalPages} · {filtered.length} jobs
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Previous
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Next
+                </Button>
               </div>
-            </Card>
-          ))}
+            </div>
+          )}
         </div>
       )}
     </WorkerShell>

@@ -25,6 +25,7 @@ export type TradeType =
   | 'Plumbing'
   | 'Electrical'
   | 'Carpentry'
+  | 'Others'
 
 export const TRADES: TradeType[] = [
   'Bricklaying',
@@ -34,6 +35,7 @@ export const TRADES: TradeType[] = [
   'Plumbing',
   'Electrical',
   'Carpentry',
+  'Others',
 ]
 
 export type DisputeReason =
@@ -55,6 +57,7 @@ export interface Worker {
   name: string
   phone: string
   trade: TradeType
+  customTrade?: string
   area: string
   bankName: string
   bankAccountNumber: string

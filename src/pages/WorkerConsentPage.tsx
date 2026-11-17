@@ -58,7 +58,7 @@ export function WorkerConsentPage() {
 
         <ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
           <li>Shows your confirmed jobs, active months, and 0 to 100 score.</li>
-          <li>Client phone numbers and bank accounts stay hidden behind tokens.</li>
+          <li>Employer phone numbers and bank accounts stay hidden behind tokens.</li>
           <li>The link expires automatically in 7 days.</li>
         </ul>
 

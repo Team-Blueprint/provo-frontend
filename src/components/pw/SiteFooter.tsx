@@ -15,10 +15,10 @@ export function SiteFooter() {
                 className="inline-block h-3 w-3 rounded-[3px] bg-[var(--pw-brick)]"
                 aria-hidden="true"
               />
-              <span>Proofwork</span>
+              <span>Provo</span>
             </Link>
             <p className="text-xs text-background/70 max-w-xs">
-              Escrow-backed per-day work records for informal workers, powered by PagaEngine.
+              Paid daily work records for informal workers, powered by PagaEngine.
             </p>
             <div className="space-y-2 pt-1">
               <p className="text-xs text-background/60">Lender &amp; pilot updates.</p>
@@ -61,7 +61,7 @@ export function SiteFooter() {
                 </li>
                 <li>
                   <Link to="/client" className="hover:text-background">
-                    Client escrow
+                    Employer portal
                   </Link>
                 </li>
                 <li>
@@ -102,6 +102,11 @@ export function SiteFooter() {
               <p className="font-medium uppercase tracking-wider text-background/50">System</p>
               <ul className="space-y-2 text-background/80">
                 <li>
+                  <Link to="/docs" className="hover:text-background">
+                    Documentation
+                  </Link>
+                </li>
+                <li>
                   <Link to="/design-system" className="hover:text-background">
                     Design system
                   </Link>
@@ -140,10 +145,10 @@ export function SiteFooter() {
 
         <div className="overflow-hidden select-none pt-4">
           <p
-            aria-label="proofwork"
-            className="flex w-full justify-between text-[19vw] lg:text-[210px] font-bold tracking-[-0.05em] leading-[0.82]"
+            aria-label="provo"
+            className="flex w-full justify-between text-[24vw] lg:text-[260px] font-bold tracking-[-0.05em] leading-[0.82]"
           >
-            {'proofwork'.split('').map((char, idx) => (
+            {'provo'.split('').map((char, idx) => (
               <span
                 key={`${char}-${idx}`}
                 className="inline-block text-background/20 transition-[transform,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-3 hover:text-background/95 cursor-default"
@@ -155,7 +160,7 @@ export function SiteFooter() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-background/15 pt-6 text-xs text-background/60">
-          <p>© 2026 Proofwork. Built for TechIgnite 2026.</p>
+          <p>© 2026 Provo. Built for TechIgnite 2026.</p>
           <p>Powered by PagaEngine Subsidiary Accounts &amp; Collect API</p>
         </div>
       </div>

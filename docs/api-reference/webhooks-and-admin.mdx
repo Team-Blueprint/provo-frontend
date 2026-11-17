@@ -1,0 +1,24 @@
+---
+title: "Webhooks & admin operations"
+description: "Inbound Paga and Telegram webhooks plus admin dispute resolution."
+---
+
+## Paga webhook (`POST /webhooks/paga`)
+
+Ingests Paga Collect payment callbacks.
+
+- **Headers:** `X-Paga-Signature` or `hash` (raw-body SHA-512 HMAC).
+- **Idempotency:** Deduplicates on `paga_event_id` in `payments_in`.
+- **Reconciliation:** Sums cumulative payments for the matched `job_id`, moving to `FUNDED` on exact match or handling under/overfunding.
+
+## Telegram webhook (`POST /webhooks/telegram`)
+
+Ingests updates from the Telegram Bot API, validated by `X-Telegram-Bot-Api-Secret-Token`.
+
+## Admin dispute resolution (`POST /admin/disputes/{dispute_id}/resolve`)
+
+Requires `is_admin = true`. Resolves a frozen `OPEN` dispute with one of three actions while enforcing the ledger balance invariant:
+
+- `RELEASE_TO_WORKER`: Marks day `PAID`, writes `RELEASED` ledger entry, and enqueues outbox payout.
+- `REFUND_TO_CLIENT`: Writes `REFUNDED` ledger entry for the disputed day.
+- `SPLIT`: Splits the disputed day's `amount_kobo` between worker payout and client refund.

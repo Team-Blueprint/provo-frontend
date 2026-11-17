@@ -51,7 +51,7 @@ export function getTierDetails(score: number) {
       tier: 'Trusted',
       nextTier: 'Established (85+)',
       unlocks: 'Eligible for tool-equipment loans and working-capital advances',
-      nextStep: 'Add 1 more distinct client or active month to reach Established.',
+      nextStep: 'Add 1 more distinct employer or active month to reach Established.',
     }
   }
   if (score >= 40) {
@@ -59,13 +59,13 @@ export function getTierDetails(score: number) {
       tier: 'Emerging',
       nextTier: 'Trusted (65+)',
       unlocks: 'Starter micro-credit eligibility with partner lenders',
-      nextStep: 'Confirm repeat clients across 2+ months to reach Trusted.',
+      nextStep: 'Confirm repeat employers across 2+ months to reach Trusted.',
     }
   }
   return {
     tier: 'Building',
     nextTier: 'Emerging (40+)',
     unlocks: 'Building verifiable job history',
-    nextStep: 'Confirm jobs from 3+ distinct clients via link or bank transfer.',
+    nextStep: 'Confirm jobs from 3+ distinct employers via link or bank transfer.',
   }
 }

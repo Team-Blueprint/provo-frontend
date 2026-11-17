@@ -1,0 +1,18 @@
+---
+title: "NDPA & consent posture"
+description: "Data minimization, explicit worker consent, client notices, and payer tokenization."
+---
+
+Provo is designed around the **Nigeria Data Protection Act (NDPA)** and **CBN Consumer Protection Framework** principles of purpose limitation, data minimization, and informed consent.
+
+## Worker consent
+
+- Lenders cannot query a worker's full history directly.
+- Every report link (`/report/{token}`) requires an explicit `Consent` row created by the worker (`POST /workers/{id}/shares`) with a named recipient and expiry timestamp.
+- Workers can revoke consent at any time, immediately invalidating the report token (`410 Gone`).
+
+## Client privacy & tokenization
+
+- **Client notice:** When funding a job, clients are informed that confirmed work outcomes contribute to the artisan's verified income record.
+- **Payer tokenization:** On lender reports, client names and phone numbers are replaced with deterministic `payer_tokens` (e.g., `Client #4B9E`). Lenders can verify client diversity and repeat business without seeing personal identities.
+- **Dispute exception:** Full client identities are accessible only to internal admins resolving an active dispute.

@@ -1,0 +1,30 @@
+---
+title: "Escrow & integer-kobo ledger"
+description: "Double-entry ledger invariants, outbox payouts, and property-tested money safety."
+---
+
+Provo stores every monetary value in integer kobo and records every movement in `ledger_entries` (`FUNDED`, `PARTIAL_FUNDED`, `EXCESS_HELD`, `RELEASED`, `REFUNDED`).
+
+## The ledger invariant
+
+For every job at every point in time:
+
+```text
+SUM(RELEASED) + SUM(REFUNDED) <= SUM(payments_in)
+```
+
+When a job reaches a terminal state (`COMPLETED` or `CANCELLED` with all disputes and refunds settled):
+
+```text
+SUM(RELEASED) + SUM(REFUNDED) == SUM(payments_in)
+```
+
+## Transactional outbox pattern
+
+When a client or supervisor confirms a day, or when the 24h scheduler auto-releases a day, three things happen inside **one atomic database transaction**:
+
+1. `job_days.status` transitions to `CONFIRMED` or `AUTO_RELEASED`.
+2. A `LedgerEntry(kind="RELEASED", amount_kobo=day.amount_kobo)` row is inserted.
+3. A `Payout(status="PENDING", idempotency_ref=...)` row is inserted.
+
+Because the payout row is committed atomically with the state change, a process crash can never lose an owed disbursement. The payout worker reads pending outbox rows, calls Paga using `payout.idempotency_ref`, retries with exponential backoff on transient network failures, and marks `job_days.status = PAID` only on confirmed settlement.

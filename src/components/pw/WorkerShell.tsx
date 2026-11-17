@@ -14,6 +14,8 @@ import {
   Settings,
   User,
 } from 'reicon-react'
+import { api } from '@/api/client'
+import type { Worker } from '@/api/types'
 import { OfflineBanner } from '@/components/pw/OfflineBanner'
 import { Card } from '@/components/ui/card'
 
@@ -38,13 +40,15 @@ const GENERAL_ITEMS = [
 ]
 
 const QUICK_COMMANDS = [
-  { to: '/worker', label: 'Overview', meta: 'Score & Paga NUBAN' },
-  { to: '/worker/jobs', label: 'Job records', meta: 'All jobs & log cash' },
+  { to: '/worker', label: 'Overview', meta: 'Score & payout Paga account' },
+  { to: '/worker/jobs', label: 'Job records', meta: 'Day-by-day escrow schedule' },
   { to: '/worker/consent', label: 'Share report', meta: 'Grant lender access' },
-  { to: '/worker/profile', label: 'Profile', meta: 'Trade & sweep bank' },
+  { to: '/worker/share-link', label: 'Share your link', meta: 'Send escrow link to employer' },
+  { to: '/worker/profile', label: 'Profile', meta: 'Trade & payout account' },
   { to: '/worker/settings', label: 'Settings', meta: 'Alert preferences' },
   { to: '/worker/help', label: 'Help', meta: 'FAQs for workers' },
-  { to: '/pay/emem-uyo', label: 'Open client pay link', meta: 'Grade 1 payment' },
+  { to: '/ussd', label: 'USSD simulator', meta: 'Dial *123# on feature phone' },
+  { to: '/client', label: 'Employer portal', meta: 'Create & fund a job' },
 ]
 
 export function WorkerShell({
@@ -59,9 +63,23 @@ export function WorkerShell({
   const [collapsed, setCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [activeWorker, setActiveWorker] = useState<Worker | null>(null)
   const modalInputRef = useRef<HTMLInputElement>(null)
   const query = searchQuery ?? localSearch
   const setQuery = onSearchChange ?? setLocalSearch
+
+  useEffect(() => {
+    const loadWorker = () => api.getWorkerDashboard().then((d) => setActiveWorker(d.worker))
+    loadWorker()
+    window.addEventListener('proofwork:demo-updated', loadWorker)
+    return () => window.removeEventListener('proofwork:demo-updated', loadWorker)
+  }, [])
+
+  const workerInitials = (activeWorker?.name ?? 'Emem Ekpo')
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('')
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -107,7 +125,7 @@ export function WorkerShell({
           <div className="space-y-7">
             <Link
               to="/"
-              title="Proofwork"
+              title="Provo"
               className={`flex items-center gap-2.5 px-2.5 font-semibold text-foreground ${
                 collapsed ? 'justify-center' : ''
               }`}
@@ -116,7 +134,7 @@ export function WorkerShell({
                 className="inline-block h-3 w-3 shrink-0 rounded-[3px] bg-[var(--pw-brick)]"
                 aria-hidden="true"
               />
-              {!collapsed && <span className="text-base">Proofwork</span>}
+              {!collapsed && <span className="text-base">Provo</span>}
             </Link>
 
             <div className="space-y-6">
@@ -145,6 +163,7 @@ export function WorkerShell({
                       >
                         <span className="flex items-center gap-2.5">
                           <Icon
+                            weight={active ? 'Filled' : undefined}
                             className={`h-4 w-4 shrink-0 ${active ? 'text-primary' : ''}`}
                             aria-hidden="true"
                           />
@@ -184,7 +203,11 @@ export function WorkerShell({
                             : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
                         }`}
                       >
-                        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        <Icon
+                          weight={active ? 'Filled' : undefined}
+                          className={`h-4 w-4 shrink-0 ${active ? 'text-primary' : ''}`}
+                          aria-hidden="true"
+                        />
                         {!collapsed && <span>{item.label}</span>}
                       </Link>
                     )
@@ -193,27 +216,10 @@ export function WorkerShell({
               </div>
             </div>
           </div>
-
-          {!collapsed && (
-            <div className="rounded-[var(--pw-radius-md)] bg-foreground text-background p-4 space-y-3">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold">Share your link</p>
-                <p className="text-xs text-background/70">
-                  Let clients pay and confirm in one tap.
-                </p>
-              </div>
-              <Link
-                to="/ussd"
-                className="block w-full rounded-full bg-primary py-2 text-center text-xs font-semibold text-primary-foreground hover:bg-[var(--pw-primary-hover)] transition-colors"
-              >
-                Open USSD simulator
-              </Link>
-            </div>
-          )}
         </aside>
 
-        <div className="flex flex-col min-w-0 bg-card lg:rounded-[22px] lg:border lg:border-border overflow-hidden">
-          <header className="border-b border-border bg-card px-4 sm:px-8 py-3.5">
+        <div className="flex flex-col min-w-0 bg-card lg:rounded-[22px] lg:border lg:border-border overflow-clip">
+          <header className="sticky top-0 z-20 border-b border-border bg-card px-4 sm:px-8 py-3.5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5 flex-1 max-w-sm">
                 <button
@@ -233,19 +239,11 @@ export function WorkerShell({
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
-                  aria-label="Search"
-                  className="sm:hidden flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground cursor-pointer"
-                >
-                  <Search className="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(true)}
                   className="hidden sm:flex w-full items-center justify-between gap-2 rounded-full border border-input bg-background px-3.5 py-2 text-left hover:border-[var(--pw-rule-strong)] transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2 text-sm text-muted-foreground/70 truncate">
                     <Search className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
-                    <span>{query || 'Search jobs, clients...'}</span>
+                    <span>{query || 'Search jobs, employers...'}</span>
                   </span>
                   <span className="rounded-[4px] border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
                     ⌘F
@@ -254,6 +252,14 @@ export function WorkerShell({
               </div>
 
               <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="Search"
+                  className="sm:hidden flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground cursor-pointer"
+                >
+                  <Search className="h-4 w-4" aria-hidden="true" />
+                </button>
                 <Link
                   to="/worker/jobs"
                   aria-label="Notifications"
@@ -263,12 +269,15 @@ export function WorkerShell({
                 </Link>
                 <Link to="/worker/profile" className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                    EE
+                    {workerInitials || 'EE'}
                   </div>
                   <div className="hidden sm:block text-left">
-                    <p className="text-xs font-semibold text-foreground leading-tight">Emem Ekpo</p>
+                    <p className="text-xs font-semibold text-foreground leading-tight">
+                      {activeWorker?.name ?? 'Emem Ekpo'}
+                    </p>
                     <p className="text-[11px] text-muted-foreground leading-tight">
-                      emem.ekpo@proofwork.ng
+                      {activeWorker?.customTrade || activeWorker?.trade || 'Bricklaying'} ·{' '}
+                      {activeWorker?.phone ?? '+234 803 441 9210'}
                     </p>
                   </div>
                 </Link>
@@ -301,7 +310,7 @@ export function WorkerShell({
                     className="inline-block h-3 w-3 rounded-[3px] bg-[var(--pw-brick)]"
                     aria-hidden="true"
                   />
-                  <span>Proofwork</span>
+                  <span>Provo</span>
                 </Link>
                 <button
                   type="button"
@@ -321,26 +330,23 @@ export function WorkerShell({
                       key={item.to}
                       to={item.to}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-2.5 rounded-[var(--pw-radius-sm)] px-3 py-2.5 font-medium ${
+                      className={`relative flex items-center gap-2.5 rounded-[var(--pw-radius-sm)] px-3 py-2.5 font-medium transition-colors ${
                         active
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          ? 'bg-muted/70 text-foreground before:content-[""] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r-full before:bg-primary'
+                          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                       }`}
                     >
-                      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <Icon
+                        weight={active ? 'Filled' : undefined}
+                        className={`h-4 w-4 shrink-0 ${active ? 'text-primary' : ''}`}
+                        aria-hidden="true"
+                      />
                       <span>{item.label}</span>
                     </Link>
                   )
                 })}
               </nav>
             </div>
-            <Link
-              to="/pay/emem-uyo"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block w-full rounded-full bg-primary py-2.5 text-center text-xs font-semibold text-primary-foreground"
-            >
-              Open pay link
-            </Link>
           </div>
         </div>
       )}
@@ -349,7 +355,7 @@ export function WorkerShell({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Search Proofwork"
+          aria-label="Search Provo"
           onClick={() => setSearchOpen(false)}
           className="fixed inset-0 z-50 flex items-start justify-center bg-foreground/30 backdrop-blur-sm px-4 pt-20"
         >

@@ -38,7 +38,7 @@ export function DisputeDialog({ open, onClose, onSubmit }: DisputeDialogProps) {
             Dispute this day’s work
           </h2>
           <p className="text-sm text-muted-foreground">
-            Disputed days are held in escrow and excluded from the worker’s score while reviewed.
+            Disputed days are held safely and excluded from the worker’s score while reviewed.
           </p>
         </div>
 

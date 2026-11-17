@@ -1,0 +1,36 @@
+---
+title: "Workers, consents & reports"
+description: "Browse available artisans, fetch worker records, create share links, and read lender reports."
+---
+
+## Public artisan directory (`GET /workers/available`)
+
+Returns available artisans filtered by optional `trade` and `area` query parameters.
+
+<ResponseField name="id" type="uuid">
+  Artisan user ID.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Display name.
+</ResponseField>
+
+<ResponseField name="trade" type="TradeType">
+  Primary registered trade.
+</ResponseField>
+
+<ResponseField name="verified_days_count" type="integer">
+  Count of settled `PAID` work days.
+</ResponseField>
+
+<ResponseField name="badge_grade" type="string">
+  `UNVERIFIED`, `BRONZE_VERIFIED`, `SILVER_VERIFIED`, or `GOLD_VERIFIED`.
+</ResponseField>
+
+## Worker record & lender sharing
+
+| Method | Path | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/workers/{worker_id}/record` | Worker / Admin | Full work record and daily verification metrics |
+| `POST` | `/workers/{worker_id}/shares` | Worker | Creates a consented, expiring lender report link |
+| `GET` | `/reports/{token}` | Public (token-gated) | Returns lender report with tokenized clients and 0–100 score (`410` if revoked/expired) |

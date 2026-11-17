@@ -1,0 +1,49 @@
+---
+title: "API overview & authentication"
+description: "Passwordless phone + 6-digit OTP authentication, JWT bearer tokens, and trade enums."
+---
+
+The Provo REST API is powered by FastAPI with Pydantic v2 validation. All monetary fields use integer **kobo** (`total_kobo`, `amount_kobo`).
+
+## Passwordless OTP authentication
+
+Provo uses phone numbers (`+234...`) and 6-digit SMS one-time passcodes instead of passwords.
+
+<CodeGroup>
+```bash Sign up
+curl -X POST https://api.useproofwork.ng/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Emem Ekpo",
+    "phone": "+2348012345678",
+    "role": "WORKER",
+    "trade": "BRICKLAYING"
+  }'
+```
+
+```bash Verify OTP
+curl -X POST https://api.useproofwork.ng/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+2348012345678",
+    "code": "482910"
+  }'
+```
+</CodeGroup>
+
+`POST /auth/verify-otp` returns `access_token` (JWT Bearer) and `refresh_token`, along with `user_id`, `is_worker`, and `is_client`.
+
+## Trade enum (`TradeType`)
+
+Free-text trade names are rejected. Jobs and worker profiles must use one of:
+
+`BRICKLAYING` · `PAINTING` · `PLUMBING` · `CARPENTRY` · `ELECTRICAL` · `WELDING` · `TAILORING` · `MECHANIC` · `OTHER`
+
+## Auth endpoints
+
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `POST` | `/auth/signup` | Register worker or client and dispatch 6-digit OTP |
+| `POST` | `/auth/login` | Dispatch fresh login OTP for existing phone |
+| `POST` | `/auth/resend-otp` | Re-send expired OTP |
+| `POST` | `/auth/verify-otp` | Exchange phone + OTP for JWT access & refresh tokens |

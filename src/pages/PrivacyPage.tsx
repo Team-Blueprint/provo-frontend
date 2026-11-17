@@ -17,7 +17,7 @@ const SHORT_RULES = [
   {
     num: '03',
     title: 'NDPA by design',
-    body: 'Nigeria’s Data Protection Act sets the floor. Client identities are tokenized on lender reports by default.',
+    body: 'Nigeria’s Data Protection Act sets the floor. Employer identities are tokenized on lender reports by default.',
   },
   {
     num: '04',
@@ -29,7 +29,7 @@ const SHORT_RULES = [
 const COLLECT_ROWS = [
   ['Worker profile', 'Your name, phone number, trade, and payout bank account for Paga auto-sweep.'],
   ['Payment callbacks', 'Raw Paga webhook payloads (amount, timestamp, payer bank, and reference) kept as immutable evidence.'],
-  ['Client confirmation', 'Client name, verified phone (on Grade 1 links), and the job type picked from the list.'],
+  ['Employer confirmation', 'Employer name, verified phone (on Grade 1 links), and the job type picked from the list.'],
   ['Consent logs', 'Timestamp, lender name, and expiry date whenever you authorize a report link.'],
 ]
 
@@ -37,7 +37,7 @@ const RIGHTS_ROWS = [
   ['Access', 'Ask for a copy of every confirmed job, receipt, and consent record we hold about you.'],
   ['Correction', 'Flag or dispute an incorrect job record within the dispute window.'],
   ['Revoke consent', 'Stop sharing any active lender report link immediately from your worker dashboard.'],
-  ['Data minimisation', 'Lenders see tokenized client IDs (e.g. Client A3F), never client phone numbers or bank accounts.'],
+  ['Data minimisation', 'Lenders see tokenized employer IDs (e.g. Employer A3F), never employer phone numbers or bank accounts.'],
 ]
 
 export function PrivacyPage() {
@@ -47,7 +47,7 @@ export function PrivacyPage() {
         <header className="flex items-center justify-between rounded-full border border-border bg-card/90 px-4 py-2 backdrop-blur-md shadow-[var(--pw-shadow-card)]">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            <span>Proofwork</span>
+            <span>Provo</span>
           </Link>
           <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
             <span className="text-foreground">Privacy</span>
@@ -63,7 +63,7 @@ export function PrivacyPage() {
             <span>NDPA-aligned by design</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-foreground">
-            Privacy at Proofwork.
+            Privacy at Provo.
           </h1>
           <p className="text-base text-muted-foreground max-w-xl mx-auto">
             How we handle your work, your payment evidence, and your trust in plain language.
@@ -119,7 +119,7 @@ export function PrivacyPage() {
               <p className="font-mono text-xs text-muted-foreground">01</p>
               <h2 className="text-xl font-semibold text-foreground">Who we are</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Proofwork is an income verification service built for informal workers in Nigeria.
+                Provo is an income verification service built for informal workers in Nigeria.
                 We act as a report provider, not a lender and not a custodian of worker funds.
               </p>
             </div>
@@ -155,7 +155,7 @@ export function PrivacyPage() {
               <h2 className="text-xl font-semibold text-foreground">How we protect it</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Every Paga callback is verified with SHA-512 (`x-paga-hash-v3`) before processing.
-                Lender report links expire automatically and never expose client phone numbers or
+                Lender report links expire automatically and never expose employer phone numbers or
                 bank account numbers unless an active dispute requires review with consent.
               </p>
             </div>

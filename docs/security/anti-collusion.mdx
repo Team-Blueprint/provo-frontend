@@ -1,0 +1,28 @@
+---
+title: "Anti-collusion & fraud rules"
+description: "Pure fraud checks that detect circular money flows, shared identities, and velocity bursts."
+---
+
+An underwriting report is only useful if it resists collusion between a worker and a friendly payer. `app/domain/fraud.py` evaluates every worker's history across four deterministic checks.
+
+## 1. Identity collision (`check_identity_collision`)
+
+Flags any job where the **client**, **worker**, or **supervisor** share:
+- The same normalized phone number (`COLLISION: Client and worker share the same phone number.`)
+- The same Telegram user ID (`COLLISION: Client and worker share the same Telegram ID.`)
+
+## 2. Circular money flow (`check_circular_flow`)
+
+Flags suspicious routing when:
+- The client's funding bank account matches the worker's destination payout account (`CIRCULAR_FLOW: Funding source account matches the worker's destination payout account.`).
+- The payer previously received funds from the worker (`CIRCULAR_FLOW: Payer previously received funds from worker`).
+
+## 3. Burst velocity (`check_burst_velocity`)
+
+Flags rapid clustering when a single payer funds `>= 4` jobs in a tight window (`VELOCITY_BURST`), surfacing the pattern to both admins and lenders.
+
+## 4. Scoring safeguards
+
+- **Single-payer cap:** No client can supply more than `35%` of day-score points once raw points exceed 25.
+- **New-payer discount:** Payers with no prior history in Provo are weighted at `0.8×` (`1.6 pts` per confirmed day instead of `2.0 pts`).
+- **Severity rating:** `evaluate_fraud_risk()` returns `CLEAN`, `MEDIUM`, or `HIGH` alongside the exact list of triggered flags.

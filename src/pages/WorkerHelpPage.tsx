@@ -9,11 +9,11 @@ const HELP_ITEMS = [
   },
   {
     q: 'Why do I need to link unknown transfers?',
-    a: 'Bank transfers include the sender’s name and bank, not their phone number. Linking a client once lets Proofwork send them the 1-tap confirmation automatically next time.',
+    a: 'Bank transfers include the sender’s name and bank, not their phone number. Linking an employer once lets Provo send them the 1-tap confirmation automatically next time.',
   },
   {
     q: 'How do cash jobs count?',
-    a: 'Cash jobs you log stay drafts until your client confirms them. Confirmed cash jobs appear at Grade 3 and are capped at 20% of your score.',
+    a: 'Cash jobs you log stay drafts until your employer confirms them. Confirmed cash jobs appear at Grade 3 and are capped at 20% of your score.',
   },
 ]
 
@@ -23,7 +23,7 @@ export function WorkerHelpPage() {
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Worker Help</h1>
         <p className="text-sm text-muted-foreground">
-          Plain answers on Paga transfers, client confirmations, and your score.
+          Plain answers on Paga transfers, employer confirmations, and your score.
         </p>
       </div>
 

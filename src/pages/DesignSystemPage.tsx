@@ -70,7 +70,7 @@ export function DesignSystemPage() {
               className="inline-flex items-center gap-2 text-sm font-semibold text-foreground"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              <span>Proofwork</span>
+              <span>Provo</span>
             </Link>
 
             <nav className="space-y-5">
@@ -107,15 +107,15 @@ export function DesignSystemPage() {
               className="inline-flex items-center gap-2 text-sm font-medium text-foreground"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              <span>Back to Proofwork</span>
+              <span>Back to Provo</span>
             </Link>
             <span className="font-mono text-xs text-muted-foreground">v0.1</span>
           </div>
 
           <header className="space-y-2">
-            <h1 className="text-3xl font-semibold text-foreground">Proofwork primitives</h1>
+            <h1 className="text-3xl font-semibold text-foreground">Provo primitives</h1>
             <p className="text-sm text-muted-foreground max-w-2xl">
-              The tokens and components Proofwork is built from. Every value on this page is the
+              The tokens and components Provo is built from. Every value on this page is the
               one the app uses.
             </p>
           </header>
@@ -143,7 +143,7 @@ export function DesignSystemPage() {
           <section id="type" className="space-y-4">
             <div className="flex items-baseline justify-between">
               <h2 className="text-xl font-semibold text-foreground">Type</h2>
-              <span className="font-mono text-xs text-muted-foreground">DM Sans Variable</span>
+              <span className="font-mono text-xs text-muted-foreground">Instrument Sans Variable</span>
             </div>
             <Card className="divide-y divide-border">
               <div className="p-4 flex items-baseline justify-between gap-4">
@@ -259,7 +259,7 @@ export function DesignSystemPage() {
             <Card className="p-5 grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label htmlFor="ds-input" className="text-sm font-medium text-foreground">
-                  Client phone
+                  Employer phone
                 </label>
                 <Input id="ds-input" placeholder="+234 803 000 0000" />
               </div>

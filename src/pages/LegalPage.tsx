@@ -4,7 +4,7 @@ import { ArrowLeft } from 'reicon-react'
 import { SiteFooter } from '@/components/pw/SiteFooter'
 import { Card } from '@/components/ui/card'
 
-type PolicyKey = 'privacy' | 'terms' | 'cookies'
+type PolicyKey = 'privacy' | 'terms' | 'cookies' | 'ndpa'
 
 interface PolicySection {
   id: string
@@ -26,7 +26,7 @@ const POLICIES: Record<
 > = {
   privacy: {
     title: 'Privacy Policy',
-    subtitle: 'How Proofwork handles your work, payment evidence, and lender consent.',
+    subtitle: 'How Provo handles your work, payment evidence, and lender consent.',
     updated: 'Updated Nov 16, 2026 · v0.2',
     sections: [
       {
@@ -34,8 +34,8 @@ const POLICIES: Record<
         title: '01 · What we collect',
         inShort: 'Only what is needed to run escrow locks, confirm days, and issue receipts.',
         body: 'We store your name, phone number, trade, payout Paga account, and raw Paga webhook callbacks as immutable evidence.',
-        added: 'Client identities are hashed into 3-character tokens before appearing on any lender report.',
-        removed: 'Full client phone numbers were previously visible on preview exports.',
+        added: 'Employer identities are hashed into 3-character tokens before appearing on any lender report.',
+        removed: 'Full employer phone numbers were previously visible on preview exports.',
       },
       {
         id: 'consent',
@@ -54,13 +54,13 @@ const POLICIES: Record<
   },
   terms: {
     title: 'Terms of Use',
-    subtitle: 'The rules that keep Proofwork records trustworthy for workers, clients, and lenders.',
+    subtitle: 'The rules that keep Provo records trustworthy for workers, employers, and lenders.',
     updated: 'Updated Nov 16, 2026 · v0.2',
     sections: [
       {
         id: 'escrow-custody',
         title: '01 · Escrow & Paga payouts',
-        inShort: 'Clients lock total job funds in Paga escrow before day 1 begins.',
+        inShort: 'Employers lock total job funds in Paga escrow before day 1 begins.',
         body: 'Each confirmed day (or 24-hour auto-release) triggers an idempotent Paga transfer to your payout account.',
         added: 'Paga /status reconciliation runs automatically before any funding lock or payout is finalized.',
       },
@@ -68,15 +68,15 @@ const POLICIES: Record<
         id: 'confirmed-work',
         title: '02 · Only funded, confirmed days count',
         inShort: 'Unfunded jobs cannot be marked done, and outcome weights stay transparent.',
-        body: 'Client-confirmed and supervisor-confirmed days carry full score weight; 24h auto-released days carry reduced weight.',
+        body: 'Employer-confirmed and supervisor-confirmed days carry full score weight; 24h auto-released days carry reduced weight.',
         removed: 'Cash job self-entry drafts were retired in favor of upfront Paga escrow.',
         added: 'A 24-hour confirmation window begins as soon as the worker marks a day done.',
       },
       {
         id: 'disputes',
         title: '03 · Dispute window',
-        inShort: 'Clients or workers can dispute a record inside the window; disputed jobs drop out of the score.',
-        body: 'Proofwork acts as an independent report provider and does not underwrite or disburse loans directly.',
+        inShort: 'Employers or workers can dispute a record inside the window; disputed jobs drop out of the score.',
+        body: 'Provo acts as an independent report provider and does not underwrite or disburse loans directly.',
       },
     ],
   },
@@ -89,14 +89,40 @@ const POLICIES: Record<
         id: 'essential',
         title: '01 · Essential storage',
         inShort: 'We only use local storage for your active session and offline form recovery.',
-        body: 'If your mobile connection drops mid-confirmation, Proofwork keeps your selected job type locally so you do not lose it.',
+        body: 'If your mobile connection drops mid-confirmation, Provo keeps your selected job type locally so you do not lose it.',
         added: 'Demo Simulator state is stored strictly in localStorage on your device.',
       },
       {
         id: 'no-ads',
         title: '02 · No third-party ad trackers',
         inShort: 'We never run advertising pixels or sell browsing history.',
-        body: 'Client confirmation pages stay lightweight so they load fast on low-end Android phones.',
+        body: 'Employer confirmation pages stay lightweight so they load fast on low-end Android phones.',
+      },
+    ],
+  },
+  ndpa: {
+    title: 'NDPA Consent',
+    subtitle: 'Your rights and explicit consent controls under the Nigeria Data Protection Act.',
+    updated: 'Updated Nov 17, 2026 · v0.2',
+    sections: [
+      {
+        id: 'explicit-consent',
+        title: '01 · Explicit, purpose-bound consent',
+        inShort: 'No lender or third party can view your work record unless you turn access on.',
+        body: 'Under the Nigeria Data Protection Act (NDPA), Provo processes your identity, Paga settlement receipts, and job history strictly to verify completed work. Sharing a credit report requires your affirmative consent for a specific lender and duration.',
+        added: 'Each consent link records the lender name, expiry window, and access log.',
+      },
+      {
+        id: 'data-minimization',
+        title: '02 · Minimized employer & worker exposure',
+        inShort: 'Lender reports never expose raw bank credentials or full employer phone numbers.',
+        body: 'Reports share only your score, outcome mix, verified workday counts, and hashed employer tokens. Raw Paga webhook signatures remain sealed on Provo for audit verification.',
+      },
+      {
+        id: 'rights-revocation',
+        title: '03 · Instant revocation & correction rights',
+        inShort: 'You can revoke a lender link in one tap or dispute any inaccurate day record.',
+        body: 'Visit your Worker Consent page at any time to revoke active report tokens immediately, request an export of your confirmed work history, or flag a disputed day for review.',
       },
     ],
   },
@@ -131,21 +157,21 @@ export function LegalPage({ initialPolicy }: { initialPolicy: PolicyKey }) {
         <header className="flex items-center justify-between rounded-full border border-border bg-card/90 px-4 py-2 backdrop-blur-md shadow-[var(--pw-shadow-card)]">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            <span>Proofwork</span>
+            <span>Provo</span>
           </Link>
           <div className="inline-flex rounded-full border border-border bg-muted/60 p-0.5">
-            {(['privacy', 'terms', 'cookies'] as PolicyKey[]).map((key) => (
+            {(['privacy', 'terms', 'cookies', 'ndpa'] as PolicyKey[]).map((key) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => navigate(`/${key}`)}
-                className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors cursor-pointer ${
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
                   initialPolicy === key
                     ? 'bg-foreground text-background'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {key}
+                {key === 'ndpa' ? 'NDPA' : key.charAt(0).toUpperCase() + key.slice(1)}
               </button>
             ))}
           </div>

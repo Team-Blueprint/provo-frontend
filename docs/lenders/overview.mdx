@@ -1,0 +1,30 @@
+---
+title: "For Lenders"
+description: "Underwrite informal-economy borrowers using verified work records instead of raw bank deposits."
+---
+
+Traditional underwriting models rely on salary slips or six months of bank statements. For the 83% of African workers in the informal economy, bank deposits fail to answer the most basic underwriting questions:
+
+- Was this transfer payment for real work, or a personal gift from a relative?
+- How many distinct clients actually pay this artisan?
+- How consistently do they work across months?
+
+Provo solves this with a structured, consent-gated **Lender Report** (`/report/{token}` or `GET /reports/{token}`).
+
+## What a lender sees
+
+<Columns cols={2}>
+  <Card title="0–100 Credibility Score" icon="chart-bar" href="/docs/lenders/credibility-score">
+    Deterministic score with four tier bands and every point traced to its exact formula.
+  </Card>
+  <Card title="Signed Snapshots" icon="shield-check" href="/docs/lenders/signed-snapshots">
+    Ed25519-signed JSON snapshots with tokenized client IDs and verifiable receipt numbers.
+  </Card>
+</Columns>
+
+## Key underwriting guarantees
+
+1. **Money locked before work:** Every scored day is backed by upfront Paga escrow funding, rather than self-reported cash.
+2. **Silence is discounted:** Days that auto-released after 24 hours count for half as much as actively confirmed days, and reports flag when `auto_release_ratio > 50%`.
+3. **Tokenized client diversity:** Payers appear as deterministic tokens (`Client #A4C1`), letting your model verify repeat clients and unique payers without exposing personal PII.
+4. **Explicit fraud flags:** Circular flows, shared phone/Telegram identities, and velocity bursts are surfaced directly on the report.

@@ -31,7 +31,7 @@ export function ReceiptCard({
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-sm font-medium text-[var(--pw-success)]">
             <CheckCircle weight="Filled" className="h-4 w-4" aria-hidden="true" />
-            <span>Escrow receipt</span>
+            <span>Job receipt</span>
           </div>
           <p className="font-mono text-xs text-muted-foreground">{receiptId}</p>
         </div>
@@ -48,7 +48,7 @@ export function ReceiptCard({
           <span className="font-medium text-foreground">{workerName}</span>
         </div>
         <div className="flex items-baseline justify-between">
-          <span className="text-muted-foreground">Client</span>
+          <span className="text-muted-foreground">Employer</span>
           <span className="font-medium text-foreground">{clientDisplay}</span>
         </div>
         <div className="flex items-baseline justify-between">
@@ -78,7 +78,7 @@ export function ReceiptCard({
           onClick={() => {
             if (navigator.share) {
               navigator.share({
-                title: `Proofwork Receipt ${receiptId}`,
+                title: `Provo Receipt ${receiptId}`,
                 text: `${workerName} - ${trade} (${receiptId})`,
               })
             }

@@ -4,15 +4,12 @@ import {
   ArrowUpRight,
   Check,
   CheckCircle,
-  Clock,
   Copy,
 } from 'reicon-react'
 import { api } from '@/api/client'
 import type { EscrowJob, ReportPayload, Worker } from '@/api/types'
 import { getTierDetails } from '@/lib/format'
-import { AmountText } from '@/components/pw/AmountText'
 import { JobLine } from '@/components/pw/JobLine'
-import { StatusPill } from '@/components/pw/StatusPill'
 import { WorkerShell } from '@/components/pw/WorkerShell'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
@@ -23,6 +20,8 @@ export function WorkerPage() {
   const [jobs, setJobs] = useState<EscrowJob[]>([])
   const [reportPreview, setReportPreview] = useState<ReportPayload | null>(null)
   const [copiedNuban, setCopiedNuban] = useState(false)
+  const [markingKey, setMarkingKey] = useState<string | null>(null)
+  const [notice, setNotice] = useState('')
 
   async function load() {
     setLoading(true)
@@ -51,8 +50,13 @@ export function WorkerPage() {
   return (
     <WorkerShell jobCount={jobs.length}>
       {loading || !worker ? (
-        <div className="space-y-4">
-          <Skeleton className="h-32 w-full" />
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-36 w-full" />
+            <Skeleton className="h-36 w-full" />
+            <Skeleton className="h-36 w-full" />
+            <Skeleton className="h-36 w-full" />
+          </div>
           <Skeleton className="h-44 w-full" />
         </div>
       ) : (
@@ -61,7 +65,7 @@ export function WorkerPage() {
             <div>
               <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">Overview</h1>
               <p className="text-sm text-muted-foreground">
-                Report work days done to release escrowed pay and build your record.
+                Mark work days done to release your pay and build your record.
               </p>
             </div>
             <div className="flex flex-wrap gap-2.5">
@@ -70,9 +74,9 @@ export function WorkerPage() {
                   <span>USSD simulator</span>
                 </Button>
               </Link>
-              <Link to="/worker/consent">
+              <Link to="/worker/share-link">
                 <Button size="md">
-                  <span>Share report</span>
+                  <span>Share your link</span>
                 </Button>
               </Link>
             </div>
@@ -82,7 +86,7 @@ export function WorkerPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-[var(--pw-radius-md)] bg-primary text-primary-foreground p-5 flex flex-col justify-between gap-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium opacity-90">Proofwork Score</span>
+                  <span className="text-sm font-medium opacity-90">Provo Score</span>
                   <Link
                     to="/worker/consent"
                     aria-label="Share report"
@@ -109,7 +113,7 @@ export function WorkerPage() {
                   </Link>
                 </div>
                 <p className="text-4xl font-bold tabular-nums text-foreground">{confirmedDays}</p>
-                <p className="text-xs text-muted-foreground">Released from escrow</p>
+                <p className="text-xs text-muted-foreground">Paid out to Paga</p>
               </Card>
 
               <Card className="p-5 flex flex-col justify-between gap-4">
@@ -124,15 +128,19 @@ export function WorkerPage() {
                   </Link>
                 </div>
                 <p className="text-4xl font-bold tabular-nums text-foreground">{waitingDays}</p>
-                <p className="text-xs text-muted-foreground">Awaiting client or supervisor</p>
+                <p className="text-xs text-muted-foreground">Awaiting employer or supervisor</p>
               </Card>
 
               <Card className="p-5 flex flex-col justify-between gap-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-foreground">Active months</span>
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground">
+                  <Link
+                    to="/worker/jobs"
+                    aria-label="View work history"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  </span>
+                  </Link>
                 </div>
                 <p className="text-4xl font-bold tabular-nums text-foreground">
                   {reportPreview.activeMonths.filter((m) => m.confirmedDays > 0).length}
@@ -142,59 +150,101 @@ export function WorkerPage() {
             </div>
           )}
 
-          {activeJobs.map((job) => {
-            const nextPending = job.days.find((d) => d.status === 'PENDING')
-            const awaitingDay = job.days.find((d) => d.status === 'DONE_REPORTED')
-            return (
-              <Card key={job.id} className="p-5 space-y-4 border-primary/30">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base font-semibold text-foreground">
-                        {job.clientName} · {job.trade}
-                      </h2>
-                      <StatusPill status={job.status} />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {job.description} · {job.area}
-                    </p>
+          {notice && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex items-center gap-2 rounded-[var(--pw-radius-md)] border border-[var(--pw-positive)]/30 bg-[var(--pw-positive-tint)] px-4 py-2.5 text-xs font-medium text-[var(--pw-positive)]"
+            >
+              <CheckCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{notice}</span>
+            </div>
+          )}
+
+          {activeJobs.length === 0 ? (
+            <Card className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h2 className="text-base font-semibold text-foreground">No active funded jobs</h2>
+                <p className="text-xs text-muted-foreground max-w-lg">
+                  When an employer locks job pay for {worker.name}, your daily schedule
+                  appears here so you can mark each day done.
+                </p>
+              </div>
+              <Link to="/client" className="shrink-0">
+                <Button size="sm" variant="secondary">
+                  Try employer flow →
+                </Button>
+              </Link>
+            </Card>
+          ) : (
+            activeJobs.map((job) => {
+              const nextPending = job.days.find((d) => d.status === 'PENDING')
+              const awaitingDay = job.days.find((d) => d.status === 'DONE_REPORTED')
+              const paidCount = job.days.filter(
+                (d) => d.status === 'PAID' || d.status === 'CONFIRMED',
+              ).length
+              const actionKey = nextPending ? `${job.id}-${nextPending.dayNumber}` : null
+              const statusSummary = [
+                nextPending
+                  ? `Day ${nextPending.dayNumber} of ${job.daysCount}`
+                  : `${job.daysCount} of ${job.daysCount} days reported`,
+                `${paidCount} paid`,
+                awaitingDay ? `Day ${awaitingDay.dayNumber} in 24h window` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')
+
+              return (
+                <Card
+                  key={job.id}
+                  className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-primary/30"
+                >
+                  <div className="space-y-1">
+                    <h2 className="text-base font-semibold text-foreground">
+                      {job.clientName} · {job.trade}
+                    </h2>
+                    <p className="text-xs text-muted-foreground tabular-nums">{statusSummary}</p>
                   </div>
-                  <AmountText amount={Math.round(job.totalKobo / 100)} size="lg" />
-                </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  {awaitingDay ? (
-                    <div className="flex items-center gap-2 text-xs text-[var(--pw-warning)]">
-                      <Clock className="h-4 w-4" aria-hidden="true" />
-                      <span>
-                        Day {awaitingDay.dayNumber} marked Done · 24h auto-release timer running
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      Funds locked in escrow. Mark today’s work done when you finish.
-                    </span>
-                  )}
-
-                  {nextPending && (
-                    <Button
-                      size="md"
-                      onClick={async () => {
-                        await api.markDayDone(job.id, nextPending.dayNumber)
-                        load()
-                      }}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                      to="/worker/jobs"
+                      className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                      <span>
-                        Mark Day {nextPending.dayNumber} done (₦
-                        {Math.round(nextPending.amountKobo / 100).toLocaleString()})
-                      </span>
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            )
-          })}
+                      Details →
+                    </Link>
+
+                    {nextPending && (
+                      <Button
+                        size="md"
+                        disabled={markingKey === actionKey}
+                        onClick={async () => {
+                          if (!actionKey) return
+                          setMarkingKey(actionKey)
+                          try {
+                            await api.markDayDone(job.id, nextPending.dayNumber)
+                            setNotice(
+                              `Day ${nextPending.dayNumber} for ${job.clientName} marked Done. 24h confirmation window started.`,
+                            )
+                            await load()
+                          } finally {
+                            setMarkingKey(null)
+                          }
+                        }}
+                      >
+                        <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                        <span>
+                          {markingKey === actionKey
+                            ? 'Updating...'
+                            : `Mark Day ${nextPending.dayNumber} done · ₦${Math.round(nextPending.amountKobo / 100).toLocaleString()}`}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              )
+            })
+          )}
 
           <div className="grid gap-4 lg:grid-cols-12">
             <Card className="lg:col-span-5 p-5 flex flex-col justify-between gap-5">

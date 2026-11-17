@@ -33,7 +33,7 @@ const WITH_ITEMS = [
   {
     title: 'Dedicated Paga NUBAN',
     highlight: '3104829104 · Auto-sweeps to bank',
-    note: 'Paga webhooks log every transfer without Proofwork ever holding funds.',
+    note: 'Paga webhooks log every transfer without Provo ever holding funds.',
     footer: 'Webhook verified',
     enterAt: 0.6,
   },
@@ -114,7 +114,7 @@ export function WithoutWithSection() {
             }}
           >
             <h2 className="text-2xl sm:text-4xl font-semibold text-center tracking-tight">
-              Without Proofwork
+              Without Provo
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               {WITHOUT_ITEMS.map((item) => {
@@ -155,7 +155,7 @@ export function WithoutWithSection() {
           >
             <div className="w-full rounded-[var(--pw-radius-lg)] border border-border bg-card p-8 sm:p-12 space-y-8 shadow-[var(--pw-shadow-card)]">
               <h2 className="text-2xl sm:text-4xl font-semibold text-center tracking-tight text-foreground">
-                With Proofwork
+                With Provo
               </h2>
               <div className="grid gap-4 md:grid-cols-3">
                 {WITH_ITEMS.map((item) => {

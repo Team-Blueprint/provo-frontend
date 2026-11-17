@@ -1,0 +1,27 @@
+---
+title: "Telegram & Web"
+description: "Primary interactive channels for workers, clients, and supervisors."
+---
+
+Provo runs the same domain state machines across both the **Telegram Bot** (`aiogram 3` in webhook mode) and the **Web Workspaces** (React + TypeScript).
+
+## Telegram Bot (`POST /webhooks/telegram`)
+
+Telegram is the primary daily channel for artisans and site supervisors because it runs smoothly on low-end Android devices and consumes minimal data.
+
+- **Verified phone onboarding:** Workers share their phone number via Telegram's native `request_contact` button, giving Provo a Telegram-verified `+234` number without typing passwords.
+- **Role-specific menus:**
+  - **Workers:** Available jobs, active locked jobs, and one-tap **Done today** reporting.
+  - **Clients:** New job creation, funding instructions, and inline **Confirm** / **Dispute** buttons.
+  - **Supervisors:** Daily confirmation queue for assigned jobs.
+- **Opaque callback IDs:** Inline confirmation and dispute buttons carry opaque identifiers. The backend verifies that the Telegram user pressing the button matches the job's `client_id` or `supervisor_id` and that the day is in `DONE_REPORTED`.
+
+## Web Workspaces
+
+| Route | Surface | Target device |
+| :--- | :--- | :--- |
+| `/worker` | Worker Home, job ledger, daily check-in, consent | Mobile-first (360px+) |
+| `/client` | Shared-link 2-step checkout & Employer Workspace | Mobile & Desktop |
+| `/supervisor` | Foreman daily sign-off queue | Mobile & Desktop |
+| `/report/:token` | Print-ready Lender Credibility Report | Desktop & Laptop |
+| `/admin` | Disputes, circular-flow flags, webhook logs | Desktop |

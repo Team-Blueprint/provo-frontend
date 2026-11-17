@@ -1,0 +1,28 @@
+---
+title: "Funding a job"
+description: "How one-time 10-digit Paga virtual NUBANs work, plus underfunding and overfunding protection."
+---
+
+When you create a job and request funding (`POST /jobs/{id}/fund-request`), Provo calls Paga Collect to issue a **one-time 10-digit virtual NUBAN** and a Paga Checkout link tied 1:1 to that `job_id`.
+
+## Why one-time NUBANs instead of Direct Debit
+
+- **Upfront certainty:** Locking the full `total_kobo` before Day 1 guarantees the worker will be paid if they do the work. Pulling day-by-day via NIBSS e-Mandate risks insufficient funds or mandate revocation mid-job.
+- **Zero setup friction:** Homeowners and shop owners will not complete a multi-step direct-debit mandate for a 2-day repair, whereas a 10-digit bank transfer takes 15 seconds.
+- **100% wallet compatibility:** Standard NIBSS NIP transfers work from every Nigerian commercial bank and mobile wallet (OPay, PalmPay, Kuda, Moniepoint).
+
+## Underfunding & overfunding rules
+
+Provo always evaluates **cumulative received funds** (`SUM(payments_in.amount_kobo)`) for a job rather than evaluating a single webhook in isolation:
+
+<Accordion title="Case A: Exact match (received == total_kobo)">
+  The job moves from `AWAITING_FUNDING` to `FUNDED`, writes a `FUNDED` ledger entry, deactivates the virtual NUBAN, and notifies both worker and client.
+</Accordion>
+
+<Accordion title="Case B: Underfunding (0 < received < total_kobo)">
+  If a client splits a transfer across two banks or mistypes the amount, the job stays `AWAITING_FUNDING` (worker cannot start yet). The client sees a live progress banner (*"₦40,000 of ₦45,000 received. Send ₦5,000 more to the same account"*). Once the remainder arrives, the job locks as `FUNDED`. If the funding window expires, the job cancels and refunds `received_kobo`.
+</Accordion>
+
+<Accordion title="Case C: Overfunding (received > total_kobo)">
+  If a client sends ₦45,000 for a ₦42,000 job (or pays twice during a bank timeout), the job locks immediately as `FUNDED` for `total_kobo` (`42,000`) and deactivates the NUBAN. Daily pay amounts are **never** inflated. The excess (`EXCESS_HELD`) is queued for automatic refund to the sender.
+</Accordion>
