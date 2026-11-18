@@ -50,6 +50,8 @@ export function UssdSimulatorPage() {
   const [jobs, setJobs] = useState<EscrowJob[]>([])
   const [soundOn, setSoundOn] = useState(true)
   const [pressedKey, setPressedKey] = useState<string | null>(null)
+  const [hasPressedKey, setHasPressedKey] = useState(false)
+  const [demoKeyIndex, setDemoKeyIndex] = useState(0)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const [simPhone, setSimPhone] = useState<string>(
     () => getSession()?.user.phone || '+2348011112222',
@@ -202,7 +204,19 @@ export function UssdSimulatorPage() {
     }
   }
 
+  useEffect(() => {
+    if (hasPressedKey) return
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return
+    }
+    const timer = window.setInterval(() => {
+      setDemoKeyIndex((prev) => (prev + 1) % 12)
+    }, 180)
+    return () => window.clearInterval(timer)
+  }, [hasPressedKey])
+
   function flashKey(id: string) {
+    setHasPressedKey(true)
     setPressedKey(id)
     setTimeout(() => setPressedKey((prev) => (prev === id ? null : prev)), 140)
   }
@@ -1041,19 +1055,24 @@ export function UssdSimulatorPage() {
             />
 
             <div className="absolute top-[70.55%] bottom-[2.4%] left-[3.85%] right-[5.5%] grid grid-cols-3 grid-rows-4 gap-0.5">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-label={`Keypad ${key}`}
-                  onClick={() => handleKeyPress(key)}
-                  className={`rounded-[6px] cursor-pointer transition-all ${
-                    pressedKey === key
-                      ? 'bg-white/30 scale-95'
-                      : 'hover:bg-white/10 active:bg-white/25'
-                  }`}
-                />
-              ))}
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key, idx) => {
+                const isDemoActive = !hasPressedKey && demoKeyIndex === idx
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-label={`Keypad ${key}`}
+                    onClick={() => handleKeyPress(key)}
+                    className={`rounded-[6px] cursor-pointer transition-all duration-150 ${
+                      pressedKey === key
+                        ? 'bg-white/30 scale-95'
+                        : isDemoActive
+                          ? 'bg-white/20 ring-1 ring-white/35'
+                          : 'hover:bg-white/10 active:bg-white/25'
+                    }`}
+                  />
+                )
+              })}
             </div>
           </div>
         </div>
