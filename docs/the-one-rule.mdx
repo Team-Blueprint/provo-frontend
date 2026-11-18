@@ -1,0 +1,33 @@
+---
+title: "The one rule"
+description: "Why self-reported income counts for nothing, and how Provo labels every work day."
+---
+
+A worker's own entry never creates a verified work record.
+
+A record in Provo requires two external facts:
+1. **Locked employer money** settled into a job's one-time Paga virtual NUBAN before work starts.
+2. **A recorded decision** on each work day by the employer or a designated site supervisor.
+
+If a worker types a job into an app on their own, it is a draft and is never included in lender reports.
+
+## How daily outcomes are labelled
+
+When a worker marks a day as done (`DONE_REPORTED`), a 24-hour confirmation window begins. Every settled day carries a clear outcome label so lenders can distinguish active sign-offs from automatic releases:
+
+| Day status | How it happens | Report label | Payout behaviour |
+| :--- | :--- | :--- | :--- |
+| `CONFIRMED` / `PAID` | Employer or named supervisor taps **Confirm** | `Employer confirmed` or `Supervisor confirmed` | Immediate payout to worker's Paga account |
+| `AUTO_RELEASED` | 24 hours pass with no dispute | `Auto-released (24h)` | Automatic scheduler payout; tracked separately on reports |
+| `DISPUTED` | Employer or supervisor disputes within 24h | `Disputed` | Day freezes; held for admin resolution |
+| Unfunded / Draft | No locked Paga payment behind the job | Not shown on lender reports | Worker cannot mark days done |
+
+<Warning>
+Silence is not confirmation. Auto-released days still pay the worker after 24 hours so a forgetful employer cannot withhold earned wages, and lender reports explicitly separate `Auto-released (24h)` days from actively confirmed days.
+</Warning>
+
+## Why we dropped cash self-logging
+
+Early prototypes allowed workers to log cash jobs and ask employers to confirm retroactively. In practice, retro-confirmations are easy to fake between friends and lack proof that money changed hands.
+
+By locking the full job total upfront via Paga Collect and disbursing daily tranches only after work is reported, every naira on a Provo report is backed by a settled NIBSS NIP or Paga Checkout transaction.

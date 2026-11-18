@@ -1,0 +1,53 @@
+---
+title: "Simulate bank deposit"
+description: "Trigger an inbound Paga Collect bank transfer in sandbox mode to test funding, partial payments, and overpayments."
+api: "POST /sandbox/simulate-deposit"
+---
+
+## Request parameters
+
+<ParamField body="account_number" type="string" required>
+  One-time 10-digit Paga account number assigned to the job.
+</ParamField>
+
+<ParamField body="amount" type="number" required>
+  Amount deposited in Naira (e.g. `45000`).
+</ParamField>
+
+<ParamField body="payer_name" type="string">
+  Optional sender name (defaults to `"Sandbox Test Client"`).
+</ParamField>
+
+<ParamField body="payer_bank" type="string">
+  Optional sender bank (defaults to `"Access Bank"`).
+</ParamField>
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.useproofwork.ng/sandbox/simulate-deposit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_number": "8801234567",
+    "amount": 45000,
+    "payer_name": "Tunde Adeleke",
+    "payer_bank": "GTBank"
+  }'
+```
+
+```json 200 OK
+{
+  "status": "success",
+  "message": "Deposit simulated.",
+  "job_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "trade": "BRICKLAYING",
+  "previous_status": "AWAITING_FUNDING",
+  "job_status": "FUNDED",
+  "amount_deposited_naira": 45000.0,
+  "total_job_amount_naira": 45000.0,
+  "total_funded_naira": 45000.0,
+  "account_number": "8801234567",
+  "reference_number": "PW-REF-9B1DEB4D",
+  "artisan_notified": true
+}
+```
+</CodeGroup>

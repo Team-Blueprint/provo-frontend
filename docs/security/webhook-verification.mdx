@@ -1,0 +1,16 @@
+---
+title: "Webhook verification & idempotency"
+description: "How Provo authenticates Paga and Telegram callbacks and prevents duplicate processing."
+---
+
+Both external webhook endpoints verify authenticity before touching business logic.
+
+## Paga Collect (`POST /webhooks/paga`)
+
+1. **Raw-body SHA-512 HMAC check:** Reads the raw request bytes (`await request.body()`) and verifies `X-Paga-Signature` or `hash` using a timing-safe comparison before parsing business fields. Invalid signatures return `400`/`401` and are logged for admin review.
+2. **Event-ID deduplication:** Inserts into `payments_in` with a unique constraint on `paga_event_id`. Duplicate deliveries from Paga retries return `200 OK` with zero side effects.
+3. **Cumulative reconciliation:** Sums all `payments_in.amount_kobo` for the job so partial transfers, exact matches, and overpayments are handled deterministically.
+
+## Telegram Bot (`POST /webhooks/telegram`)
+
+Validates the `X-Telegram-Bot-Api-Secret-Token` header against `TELEGRAM_WEBHOOK_SECRET`, rejecting unauthorized callers with `403 Forbidden`.

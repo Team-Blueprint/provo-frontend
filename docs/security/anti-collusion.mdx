@@ -1,0 +1,28 @@
+---
+title: "Anti-collusion & fraud rules"
+description: "Pure fraud checks that detect circular money flows, shared identities, and velocity bursts."
+---
+
+An underwriting report is only useful if it resists collusion between a worker and a friendly payer. `app/domain/fraud.py` evaluates every worker's history across four deterministic checks.
+
+## 1. Identity collision (`check_identity_collision`)
+
+Flags any job where the **employer**, **worker**, or **supervisor** share:
+- The same normalized phone number (`COLLISION: Client and worker share the same phone number.`)
+- The same Telegram user ID (`COLLISION: Client and worker share the same Telegram ID.`)
+
+## 2. Circular money flow (`check_circular_flow`)
+
+Flags suspicious routing when:
+- The employer's funding bank account matches the worker's destination payout account (`CIRCULAR_FLOW: Funding source account matches the worker's destination payout account.`).
+- The payer previously received funds from the worker (`CIRCULAR_FLOW: Payer previously received funds from worker`).
+
+## 3. Burst velocity (`check_burst_velocity`)
+
+Flags rapid clustering when a single payer funds `>= 4` jobs in a tight window (`VELOCITY_BURST`), surfacing the pattern to both admins and lenders.
+
+## 4. Report transparency
+
+- **Single-payer concentration:** Lender reports expose `unique_payers` and `repeat_payers` so underwriters can see if all work came from a single employer.
+- **Auto-release ratio:** Reports highlight `auto_release_ratio` so lenders can distinguish active employer confirmations from 24h automatic releases.
+- **Severity rating:** `evaluate_fraud_risk()` returns `CLEAN`, `MEDIUM`, or `HIGH` alongside the exact list of triggered flags.

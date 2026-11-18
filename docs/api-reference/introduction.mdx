@@ -1,0 +1,70 @@
+---
+title: "API overview & authentication"
+description: "Phone + 6-digit PIN login, OTP signup, Telegram PIN setup, and trade options."
+---
+
+The Provo REST API runs on FastAPI. All money fields use whole-number **kobo** (`100 kobo = ₦1`) so daily splits never lose a kobo to rounding.
+
+## Phone + 6-digit PIN login
+
+Workers and employers sign in with their Nigerian phone number (`+234...`) and a 6-digit PIN. New accounts also confirm their phone number with a 6-digit SMS code.
+
+<CodeGroup>
+```bash Sign up (sends SMS code)
+curl -X POST https://api.useproofwork.ng/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Emem Bassey",
+    "phone": "+2348123456780",
+    "pin": "123456",
+    "role": "worker",
+    "trade": "BRICKLAYING"
+  }'
+```
+
+```bash Login with PIN
+curl -X POST https://api.useproofwork.ng/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+2348123456780",
+    "pin": "123456"
+  }'
+```
+
+```bash Verify signup SMS code
+curl -X POST https://api.useproofwork.ng/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+2348123456780",
+    "code": "482910"
+  }'
+```
+</CodeGroup>
+
+`POST /auth/login` and `POST /auth/verify-otp` return `access_token` (Bearer token) and `refresh_token`, along with `user_id`, `is_worker`, and `is_client`.
+
+## Setting a web PIN for Telegram accounts
+
+If a worker or employer first joined through Telegram, `GET /auth/me` returns `needs_pin_setup: true`. They can set a web login PIN in two steps:
+
+1. Call `POST /auth/request-set-pin` with `phone` to send an SMS verification code.
+2. Call `POST /auth/set-pin` with `phone`, `otp_code`, and `new_pin` (6 digits).
+
+## Allowed trades (`TradeType`)
+
+Free-text trade names are rejected. Jobs and worker profiles must pick one of:
+
+`BRICKLAYING` · `PAINTING` · `PLUMBING` · `CARPENTRY` · `ELECTRICAL` · `WELDING` · `TAILORING` · `MECHANIC` · `OTHER`
+
+## Auth endpoints
+
+| Method | Path | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/auth/signup` | Create a worker or employer account with a 6-digit PIN and send an SMS code |
+| `POST` | `/auth/login` | Sign in with phone + 6-digit PIN and get access tokens |
+| `POST` | `/auth/resend-otp` | Send a fresh SMS code if the previous one expired |
+| `POST` | `/auth/verify-otp` | Confirm the SMS code and get access tokens |
+| `POST` | `/auth/request-set-pin` | Send an SMS code so a Telegram-created account can set a web PIN |
+| `POST` | `/auth/set-pin` | Verify the SMS code and save a 6-digit web PIN |
+| `POST` | `/auth/refresh` | Get a new access token using a refresh token |
+| `GET` | `/auth/me` | Return the signed-in user's profile and `needs_pin_setup` flag |

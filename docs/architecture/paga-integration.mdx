@@ -1,0 +1,18 @@
+---
+title: "Paga integration"
+description: "How Provo uses Paga Collect one-time virtual NUBANs, webhooks, and payouts."
+---
+
+Provo builds on PagaEngine's collection and disbursement rails so employers can pay from any Nigerian bank and workers receive daily payouts in their Paga account.
+
+## End-to-end payment flow
+
+1. **Generate virtual NUBAN:** `POST /jobs/{id}/fund-request` calls Paga Collect with the `job_id` reference and `total_kobo`, returning a one-time 10-digit NUBAN and a Paga Checkout URL.
+2. **Employer transfers via NIP:** The employer pays from OPay, UBA, Access, GTBank, Kuda, or Paga Checkout.
+3. **Receive webhook:** Paga posts to `POST /webhooks/paga`. Provo verifies the raw-body HMAC signature (`X-Paga-Signature` or `hash`), deduplicates on `paga_event_id`, reconciles cumulative `payments_in`, and moves the job to `FUNDED`.
+4. **Disburse daily tranche:** On day confirmation or 24h auto-release, the outbox payout worker disburses `day.amount_kobo` to `worker.payout_account` using `payout.idempotency_ref`.
+5. **Reconciliation:** A CLI reconciliation command compares `ledger_entries` totals against `payouts` statuses and surfaces any discrepancies.
+
+<Tip>
+In sandbox or demo environments where live Paga payout endpoints are restricted, `PagaClient` routes disbursements through a labelled simulated adapter behind the exact same Python interface, and `POST /sandbox/simulate-deposit` lets testers trigger deposit settlement on demand.
+</Tip>

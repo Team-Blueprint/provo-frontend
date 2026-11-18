@@ -1,0 +1,53 @@
+---
+title: "Disputes & payout queue"
+description: "Admin endpoints to inspect open disputes, monitor the payout queue, and resolve frozen days."
+api: "POST /admin/disputes/{dispute_id}/resolve"
+---
+
+All `/admin/*` endpoints require an authenticated user with `is_admin = true`.
+
+## List disputes (`GET /admin/disputes`) & outbox (`GET /admin/outbox`)
+
+```bash curl
+curl https://api.useproofwork.ng/admin/disputes \
+  -H "Authorization: Bearer <admin_token>"
+```
+
+## Resolve a dispute (`POST /admin/disputes/{dispute_id}/resolve`)
+
+<ParamField body="action" type="string" required>
+  One of `RELEASE_TO_WORKER`, `REFUND_TO_CLIENT`, or `SPLIT`.
+</ParamField>
+
+<ParamField body="resolution_note" type="string" required>
+  Admin summary of the decision (5 to 500 characters).
+</ParamField>
+
+<ParamField body="worker_amount_kobo" type="integer">
+  Required when `action` is `SPLIT`.
+</ParamField>
+
+<ParamField body="client_amount_kobo" type="integer">
+  Required when `action` is `SPLIT`.
+</ParamField>
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.useproofwork.ng/admin/disputes/77777777-7777-7777-7777-777777777777/resolve \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "RELEASE_TO_WORKER",
+    "resolution_note": "Confirmed site photos show completed block wall."
+  }'
+```
+
+```json 200 OK
+{
+  "status": "resolved",
+  "dispute_id": "77777777-7777-7777-7777-777777777777",
+  "action": "RELEASE_TO_WORKER",
+  "day_status": "PAID"
+}
+```
+</CodeGroup>

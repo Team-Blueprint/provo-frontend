@@ -1,0 +1,41 @@
+---
+title: "Signed snapshots & receipts"
+description: "Cryptographic verification of lender work reports and job completion receipts."
+---
+
+Every lender report and completed job receipt can be independently verified without trusting a screenshot.
+
+## Lender report structure (`GET /reports/{token}`)
+
+```json
+{
+  "report_token": "rep_emem_lapo_2026",
+  "worker": {
+    "id": "usr_emem_01",
+    "name": "Emem Ekpo",
+    "trade": "BRICKLAYING",
+    "area": "Uyo"
+  },
+  "metrics": {
+    "total_paid_naira": 180000,
+    "total_days": 18,
+    "confirmed_days": 16,
+    "auto_released_days": 2,
+    "disputed_days": 0,
+    "unique_payers": 6,
+    "repeat_payers": 3,
+    "active_months": 4,
+    "auto_release_ratio": 0.11
+  },
+  "fraud_evaluation": {
+    "is_flagged": false,
+    "severity": "CLEAN",
+    "flags": []
+  },
+  "signature": "ed25519:7a9f...c31b"
+}
+```
+
+## Receipt verification
+
+When the final day of a job reaches `PAID`, the job transitions to `COMPLETED` and Provo issues a permanent receipt (`receipt_number`, e.g. `PW-2026-00412`). Anyone with a receipt number can verify its authenticity and settlement status via `GET /jobs/verify/{receipt_number}`.

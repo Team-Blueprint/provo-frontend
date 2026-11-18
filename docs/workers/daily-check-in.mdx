@@ -1,0 +1,24 @@
+---
+title: "Daily check-in & 24h window"
+description: "How workers mark each day done and how payouts release."
+---
+
+Once an employer funds a job (`job.status = FUNDED`), each day (`1..N`) starts in `PENDING`.
+
+<Steps>
+  <Step title="Mark the day done">
+    At the end of the workday, tap **Mark Day Done** in the Worker workspace (`/worker/jobs`), reply **Done** in Telegram, or select the active job in `*123#`.
+
+    This calls `POST /jobs/{job_id}/days/{day_number}/done`, moving the day to `DONE_REPORTED` and setting `release_at = done_at + 24 hours`.
+  </Step>
+  <Step title="Employer or supervisor reviews">
+    The employer and any assigned site supervisor receive a notification. A single tap on **Confirm** moves the day to `CONFIRMED`, records an active confirmation on your work history, and enqueues an immediate outbox payout.
+  </Step>
+  <Step title="Automatic 24h fallback">
+    If neither the employer nor the supervisor disputes within 24 hours, the background scheduler picks up the row with `SELECT ... FOR UPDATE SKIP LOCKED`, transitions it to `AUTO_RELEASED`, and disburses the day's pay to the worker's Paga account.
+  </Step>
+</Steps>
+
+<Note>
+You can only mark a day done when the job is `FUNDED` or `IN_PROGRESS`. If the employer has not finished funding the one-time NUBAN, the UI clearly shows `AWAITING_FUNDING` so you never start unbacked work.
+</Note>

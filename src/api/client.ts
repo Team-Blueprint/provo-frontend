@@ -1,3 +1,6 @@
+import { httpAdapter } from './httpAdapter'
 import { mockAdapter } from './mockAdapter'
 
-export const api = mockAdapter
+const useMock = import.meta.env.VITE_USE_MOCK === 'true'
+
+export const api = useMock ? mockAdapter : httpAdapter

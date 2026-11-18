@@ -1,0 +1,66 @@
+---
+title: "Daily work & confirmations"
+description: "Worker marks a day done, and employer or supervisor confirms or disputes."
+api: "POST /jobs/{job_id}/days/{day_number}/confirm"
+---
+
+## Mark day done (`POST /jobs/{job_id}/days/{day_number}/done`)
+
+Called by the assigned worker once a day's work is finished. Moves the day from `PENDING` to `DONE_REPORTED` and starts the 24-hour review window.
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.useproofwork.ng/jobs/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/days/1/done \
+  -H "Authorization: Bearer <worker_token>"
+```
+
+```json 200 OK
+{
+  "id": "d1111111-1111-1111-1111-111111111111",
+  "day_number": 1,
+  "worker_id": "550e8400-e29b-41d4-a716-446655440000",
+  "amount_kobo": 1500000,
+  "status": "DONE_REPORTED",
+  "done_at": "2026-11-18T16:00:00Z",
+  "release_at": "2026-11-19T16:00:00Z",
+  "proof_photo": null
+}
+```
+</CodeGroup>
+
+## Confirm day (`POST /jobs/{job_id}/days/{day_number}/confirm`)
+
+Called by the employer or assigned supervisor. Moves the day to `CONFIRMED` and queues the day's payout in the same database transaction.
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.useproofwork.ng/jobs/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/days/1/confirm \
+  -H "Authorization: Bearer <employer_or_supervisor_token>"
+```
+
+```json 200 OK
+{
+  "id": "d1111111-1111-1111-1111-111111111111",
+  "day_number": 1,
+  "amount_kobo": 1500000,
+  "status": "CONFIRMED",
+  "done_at": "2026-11-18T16:00:00Z",
+  "release_at": "2026-11-19T16:00:00Z"
+}
+```
+</CodeGroup>
+
+## Dispute day (`POST /jobs/{job_id}/days/{day_number}/dispute`)
+
+Freezes the day in `DISPUTED` so the 24-hour auto-release timer cannot disburse funds until an admin resolves it.
+
+<ParamField body="reason" type="string" required>
+  Explanation of the dispute (3 to 500 characters).
+</ParamField>
+
+```bash curl
+curl -X POST https://api.useproofwork.ng/jobs/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/days/1/dispute \
+  -H "Authorization: Bearer <employer_or_supervisor_token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "reason": "Wall plastering was left unfinished." }'
+```

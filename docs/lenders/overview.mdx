@@ -1,0 +1,30 @@
+---
+title: "For Lenders"
+description: "Assess informal-economy borrowers using verified work records instead of raw bank deposits."
+---
+
+Traditional loan checks rely on salary slips or six months of bank statements. For most skilled workers in Africa, bank deposits leave lenders guessing:
+
+- Was this transfer payment for real work, or a gift from a relative?
+- How many different employers actually pay this worker?
+- How steadily do they work from month to month?
+
+Provo answers these questions with a worker-approved **Lender Work Report** (`/report/{token}` or `GET /reports/{token}`), without imposing a single proprietary score—so each lender can apply its own underwriting rules to the raw verified signals.
+
+## What a lender sees
+
+<Columns cols={2}>
+  <Card title="Verified work signals" icon="chart-bar" href="/docs/the-one-rule">
+    Confirmed days, supervisor-confirmed days, 24h auto-released days, active months, and repeat employers.
+  </Card>
+  <Card title="Signed snapshots" icon="shield-check" href="/docs/lenders/signed-snapshots">
+    Tamper-proof JSON reports with masked employer IDs, fraud checks, and verifiable receipt numbers.
+  </Card>
+</Columns>
+
+## Built-in lender safeguards
+
+1. **Money locked before work:** Every recorded day is backed by an upfront Paga transfer, never self-reported cash.
+2. **Active confirmation vs. 24h auto-release:** Reports separate days actively confirmed by an employer or supervisor from days that auto-released after 24 hours of silence.
+3. **Masked employer IDs:** Employers appear as consistent IDs (`Employer #A4C1`) so you can verify repeat business and client diversity without exposing personal phone numbers.
+4. **Clear fraud flags:** Circular transfers, shared phone or Telegram accounts, and sudden job bursts appear directly on the report.

@@ -1,0 +1,50 @@
+---
+title: "Funding & receipt verification"
+description: "Generate a one-time Paga bank account number for a draft job and verify completed job receipts."
+api: "POST /jobs/{job_id}/fund-request"
+---
+
+## Request funding (`POST /jobs/{job_id}/fund-request`)
+
+If a job was created with `auto_fund_request: false`, call this endpoint as the job's employer to generate the one-time 10-digit Paga virtual account number and checkout URL.
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.useproofwork.ng/jobs/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/fund-request \
+  -H "Authorization: Bearer <access_token>"
+```
+
+```json 200 OK
+{
+  "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "status": "AWAITING_FUNDING",
+  "funding_reference": "PW-REF-9B1DEB4D",
+  "paga_account_number": "8801234567",
+  "paga_payment_url": "https://beta-checkout.paga.com/pay/PW-REF-9B1DEB4D"
+}
+```
+</CodeGroup>
+
+## Verify receipt (`GET /jobs/verify/{receipt_number}`)
+
+Public endpoint to verify an issued completion receipt.
+
+<CodeGroup>
+```bash curl
+curl https://api.useproofwork.ng/jobs/verify/PW-2026-00412
+```
+
+```json 200 OK
+{
+  "id": "c7a1f3e0-1234-4abc-9def-001122334455",
+  "receipt_number": "PW-2026-00412",
+  "job_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "issued_at": "2026-11-18T14:22:00Z",
+  "receipt_data": {
+    "trade": "BRICKLAYING",
+    "total_kobo": 4500000,
+    "days_paid": 3
+  }
+}
+```
+</CodeGroup>

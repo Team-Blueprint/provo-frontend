@@ -1,0 +1,26 @@
+:root {
+  --pw-bg: hsl(210 33% 99%);
+  --pw-surface: hsl(0 0% 100%);
+  --pw-ink: hsl(222.2 84% 4.9%);
+  --pw-ink-muted: hsl(215.4 16.3% 46.9%);
+  --pw-rule: hsl(214.3 31.8% 91.4%);
+  --pw-primary: hsl(214 100% 22%);
+  --pw-primary-hover: hsl(214 100% 17%);
+  --pw-primary-tint: hsl(210 40% 96.1%);
+  --pw-brick: hsl(33 100% 50%);
+}
+
+body {
+  background-color: var(--pw-bg);
+  color: var(--pw-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  border-color: var(--pw-rule);
+  border-radius: 13px;
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.025em;
+}

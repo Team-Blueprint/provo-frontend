@@ -1,42 +1,43 @@
 import { useState } from 'react'
-import { CheckCircle, Coins, InfoCircle, ShieldCheck } from 'reicon-react'
-import type { EvidenceGrade } from '@/api/types'
+import { Clock, InfoCircle, ShieldTick, UserTick } from 'reicon-react'
+import type { ConfirmationOutcome } from '@/api/types'
 import { messages } from '@/messages/en'
 import { cn } from '@/lib/utils'
 
 interface GradeBadgeProps {
-  grade: EvidenceGrade
+  outcome: ConfirmationOutcome
   size?: 'sm' | 'md'
   showHelp?: boolean
 }
 
-export function GradeBadge({ grade, size = 'md', showHelp = false }: GradeBadgeProps) {
+export function GradeBadge({ outcome, size = 'md', showHelp = false }: GradeBadgeProps) {
   const [openHelp, setOpenHelp] = useState(false)
-  const copy = messages.grades[grade]
+  const copy = messages.outcomes[outcome]
+  if (!copy) return null
 
-  const styles: Record<EvidenceGrade, string> = {
-    1: 'bg-[var(--pw-grade-1)] text-primary-foreground border border-transparent',
-    2: 'bg-[var(--pw-info-tint)] text-foreground border-2 border-[var(--pw-grade-2)]',
-    3: 'bg-transparent text-muted-foreground border border-dashed border-[var(--pw-grade-3)]',
+  const styles: Record<ConfirmationOutcome, string> = {
+    client: 'bg-[var(--pw-grade-1)] text-primary-foreground border border-transparent',
+    supervisor: 'bg-[var(--pw-info-tint)] text-foreground border-2 border-[var(--pw-grade-2)]',
+    auto: 'bg-transparent text-muted-foreground border border-dashed border-[var(--pw-grade-3)]',
   }
 
   const icon =
-    grade === 1 ? (
-      <ShieldCheck weight="Filled" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-    ) : grade === 2 ? (
-      <CheckCircle weight="Filled" className="h-3.5 w-3.5 shrink-0 text-[var(--pw-grade-2)]" aria-hidden="true" />
+    outcome === 'client' ? (
+      <ShieldTick weight="Filled" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+    ) : outcome === 'supervisor' ? (
+      <UserTick className="h-3.5 w-3.5 shrink-0 text-[var(--pw-grade-2)]" aria-hidden="true" />
     ) : (
-      <Coins className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
     )
 
   return (
     <div className="inline-flex flex-col items-start gap-1">
       <span
-        aria-label={`Grade ${grade}, ${copy.label}`}
+        aria-label={copy.label}
         className={cn(
           'inline-flex items-center gap-1.5 rounded-full font-medium whitespace-nowrap',
           size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs',
-          styles[grade],
+          styles[outcome],
         )}
       >
         {icon}

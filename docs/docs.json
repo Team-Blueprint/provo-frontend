@@ -1,0 +1,160 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Provo",
+  "colors": {
+    "primary": "#003170",
+    "light": "#0E5A6B",
+    "dark": "#002557"
+  },
+  "appearance": {
+    "default": "light"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Worker Demo",
+        "href": "/worker"
+      },
+      {
+        "label": "Employer Portal",
+        "href": "/employer"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Open App",
+      "href": "/"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "the-one-rule",
+              "how-it-works",
+              "quick-start"
+            ]
+          },
+          {
+            "group": "For Workers",
+            "pages": [
+              "workers/overview",
+              "workers/sign-up-and-payouts",
+              "workers/daily-check-in",
+              "workers/sharing-reports"
+            ]
+          },
+          {
+            "group": "For Employers & Supervisors",
+            "pages": [
+              "employers/overview",
+              "employers/funding-a-job",
+              "employers/confirming-and-supervisors"
+            ]
+          },
+          {
+            "group": "For Lenders",
+            "pages": [
+              "lenders/overview",
+              "lenders/signed-snapshots"
+            ]
+          },
+          {
+            "group": "Channels",
+            "pages": [
+              "channels/telegram-and-web",
+              "channels/ussd-and-sms"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Architecture & Security",
+        "groups": [
+          {
+            "group": "Core Architecture",
+            "pages": [
+              "architecture/overview",
+              "architecture/state-machine",
+              "architecture/escrow-and-ledger",
+              "architecture/paga-integration"
+            ]
+          },
+          {
+            "group": "Security & Compliance",
+            "pages": [
+              "security/anti-collusion",
+              "security/webhook-verification",
+              "security/ndpa-and-consent"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/health"
+            ]
+          },
+          {
+            "group": "Authentication",
+            "pages": [
+              "api-reference/auth-signup-login",
+              "api-reference/auth-pin-and-profile"
+            ]
+          },
+          {
+            "group": "Jobs & Daily Decisions",
+            "pages": [
+              "api-reference/jobs-create-and-list",
+              "api-reference/jobs-funding",
+              "api-reference/jobs-daily-decisions"
+            ]
+          },
+          {
+            "group": "Workers & Reports",
+            "pages": [
+              "api-reference/workers-directory",
+              "api-reference/workers-settings",
+              "api-reference/workers-shares"
+            ]
+          },
+          {
+            "group": "USSD & Sandbox",
+            "pages": [
+              "api-reference/ussd-endpoints",
+              "api-reference/sandbox-deposit"
+            ]
+          },
+          {
+            "group": "Webhooks & Admin",
+            "pages": [
+              "api-reference/webhooks",
+              "api-reference/admin"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/Team-Blueprint/proofwork-frontend"
+    }
+  }
+}

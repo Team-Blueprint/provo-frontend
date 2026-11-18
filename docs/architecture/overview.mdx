@@ -1,0 +1,23 @@
+---
+title: "System architecture"
+description: "How Provo's channels, API server, business rules, and Paga payment rails fit together."
+---
+
+Provo separates user channels, business rules, and payment integrations into clean layers so every rule is easy to test and verify.
+
+<ArchitectureDiagram />
+
+## How the parts work together
+
+| Layer | Folder | What it does |
+| :--- | :--- | :--- |
+| **Channels** | `frontend/src/` & `app/integrations/` | Web workspaces, Telegram bot, and USSD (`*123#`) menu for workers, employers, and supervisors. |
+| **API & Webhooks** | `app/api/` | FastAPI routes for phone + PIN login, jobs, daily decisions, lender reports, and incoming payment alerts. |
+| **Core Rules** | `app/domain/` | Pure Python rules with no database or network calls: job/day status rules, money math, scoring, and fraud checks. |
+| **Services** | `app/services/` | Runs each action (like creating a job or confirming a day) inside a single database transaction so partial updates cannot happen. |
+| **Background Workers** | `app/workers/` | Checks for 24-hour expired days to auto-release and sends queued payouts to Paga with safe retries. |
+
+## Testable adapters
+
+- **Paga adapter:** Live Paga payment calls and a simulated test adapter sit behind the same interface so demos and automated tests run reliably.
+- **Frontend API mode:** `src/api/client.ts` switches between local demo data (`mockAdapter.ts`) and the live FastAPI server (`httpAdapter.ts`) using `VITE_API_MODE`.

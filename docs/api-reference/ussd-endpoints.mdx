@@ -1,0 +1,38 @@
+---
+title: "USSD simulator"
+description: "Check balances, view pending jobs, report work done, and withdraw pay via *123#."
+api: "POST /ussd"
+---
+
+## Interactive USSD gateway (`POST /ussd`)
+
+Handles `*123#` menu sessions and returns `CON` (continue) or `END` (session finished).
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.useproofwork.ng/ussd \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "SIM-SESSION-001",
+    "phoneNumber": "+2348123456780",
+    "serviceCode": "*123#",
+    "text": "1"
+  }'
+```
+
+```json 200 OK
+{
+  "action": "CON",
+  "message": "Emem Bassey (BRICKLAYING)\nTotal earned: ₦180,000\n0. Back"
+}
+```
+</CodeGroup>
+
+## Direct USSD endpoints
+
+| Method | Path | What it does |
+| :--- | :--- | :--- |
+| `GET` | `/ussd/balance?phone=+2348123456780` | Fetch worker's settled balance and Paga payout account |
+| `GET` | `/ussd/pending-jobs?phone=+2348123456780` | List funded jobs awaiting daily completion |
+| `POST` | `/ussd/report-done` | Mark the active day done (`{ "phone", "job_id" }`) |
+| `POST` | `/ussd/withdraw` | Trigger payout to the worker's Paga account (`{ "phone" }`) |

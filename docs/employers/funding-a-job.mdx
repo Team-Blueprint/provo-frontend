@@ -1,0 +1,28 @@
+---
+title: "Funding a job"
+description: "How one-time 10-digit bank account numbers work, plus what happens if too little or too much is sent."
+---
+
+When you create a job, Provo asks Paga for a **one-time 10-digit bank account number** and a payment link tied only to that job, shown on `/checkout/:jobId`.
+
+## Why one-time account numbers instead of direct debit
+
+- **Pay is guaranteed upfront:** Locking the full job amount before Day 1 means the worker knows the money is ready. Pulling money day by day from a bank mandate risks failed debits mid-job.
+- **Fast for any employer:** Homeowners will not set up a bank mandate for a 2-day repair, whereas a 10-digit bank transfer takes 15 seconds.
+- **Works with every bank and wallet:** Standard bank transfers work from OPay, PalmPay, Kuda, Moniepoint, UBA, Access, GTBank, and every other Nigerian bank.
+
+## What happens if the amount does not match
+
+Provo always adds up **all transfers received so far** for a job instead of checking each transfer on its own:
+
+<Accordion title="Exact match (received equals job total)">
+  The job moves to `FUNDED`, records the funded amount, closes the temporary account number, and notifies both the worker and the employer.
+</Accordion>
+
+<Accordion title="Too little sent (underfunded)">
+  If an employer splits a payment across two banks or mistypes the amount, the job stays in `AWAITING_FUNDING` and work cannot start yet. The checkout screen shows how much has arrived and how much is left to send. Once the rest arrives, the job becomes `FUNDED`. If the funding window expires, the job cancels and refunds what was sent.
+</Accordion>
+
+<Accordion title="Too much sent (overfunded)">
+  If an employer sends ₦45,000 for a ₦42,000 job (or accidentally pays twice), the job locks immediately as `FUNDED` for the agreed `₦42,000` and closes the account number. Daily pay is never inflated, and the extra `₦3,000` is queued for refund to the sender.
+</Accordion>

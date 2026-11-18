@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'reicon-react'
-import type { JobType } from '@/api/types'
+import type { TradeType } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -56,7 +56,8 @@ const NAV_SECTIONS = [
 ]
 
 export function DesignSystemPage() {
-  const [jobType, setJobType] = useState<JobType>('Bricklaying')
+  const [jobType, setJobType] = useState<TradeType>('Bricklaying')
+  const [trade, setTrade] = useState('Bricklayer')
   const [activeNav, setActiveNav] = useState('colour')
 
   return (
@@ -69,7 +70,7 @@ export function DesignSystemPage() {
               className="inline-flex items-center gap-2 text-sm font-semibold text-foreground"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              <span>Proofwork</span>
+              <span>Provo</span>
             </Link>
 
             <nav className="space-y-5">
@@ -106,15 +107,15 @@ export function DesignSystemPage() {
               className="inline-flex items-center gap-2 text-sm font-medium text-foreground"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              <span>Back to Proofwork</span>
+              <span>Back to Provo</span>
             </Link>
             <span className="font-mono text-xs text-muted-foreground">v0.1</span>
           </div>
 
           <header className="space-y-2">
-            <h1 className="text-3xl font-semibold text-foreground">Proofwork primitives</h1>
+            <h1 className="text-3xl font-semibold text-foreground">Provo primitives</h1>
             <p className="text-sm text-muted-foreground max-w-2xl">
-              The tokens and components Proofwork is built from. Every value on this page is the
+              The tokens and components Provo is built from. Every value on this page is the
               one the app uses.
             </p>
           </header>
@@ -142,7 +143,7 @@ export function DesignSystemPage() {
           <section id="type" className="space-y-4">
             <div className="flex items-baseline justify-between">
               <h2 className="text-xl font-semibold text-foreground">Type</h2>
-              <span className="font-mono text-xs text-muted-foreground">DM Sans Variable</span>
+              <span className="font-mono text-xs text-muted-foreground">Instrument Sans Variable</span>
             </div>
             <Card className="divide-y divide-border">
               <div className="p-4 flex items-baseline justify-between gap-4">
@@ -258,7 +259,7 @@ export function DesignSystemPage() {
             <Card className="p-5 grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label htmlFor="ds-input" className="text-sm font-medium text-foreground">
-                  Client phone
+                  Employer phone
                 </label>
                 <Input id="ds-input" placeholder="+234 803 000 0000" />
               </div>
@@ -266,11 +267,16 @@ export function DesignSystemPage() {
                 <label htmlFor="ds-select" className="text-sm font-medium text-foreground">
                   Trade
                 </label>
-                <Select id="ds-select" defaultValue="Bricklayer">
-                  <option value="Bricklayer">Bricklayer</option>
-                  <option value="Tailor">Tailor</option>
-                  <option value="Mechanic">Mechanic</option>
-                </Select>
+                <Select
+                  id="ds-select"
+                  value={trade}
+                  onValueChange={setTrade}
+                  options={[
+                    { value: 'Bricklayer', label: 'Bricklayer' },
+                    { value: 'Tailor', label: 'Tailor' },
+                    { value: 'Mechanic', label: 'Mechanic' },
+                  ]}
+                />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <label htmlFor="ds-textarea" className="text-sm font-medium text-foreground">
@@ -290,17 +296,17 @@ export function DesignSystemPage() {
             </div>
             <Card className="p-5 space-y-4">
               <div className="flex flex-wrap gap-3">
-                <GradeBadge grade={1} showHelp />
-                <GradeBadge grade={2} showHelp />
-                <GradeBadge grade={3} showHelp />
+                <GradeBadge outcome="client" showHelp />
+                <GradeBadge outcome="supervisor" showHelp />
+                <GradeBadge outcome="auto" showHelp />
               </div>
               <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
-                <StatusPill status="confirmed" />
-                <StatusPill status="waiting" />
-                <StatusPill status="draft" />
-                <StatusPill status="disputed" />
-                <StatusPill status="expired" />
-                <StatusPill status="failed" />
+                <StatusPill status="PAID" />
+                <StatusPill status="DONE_REPORTED" />
+                <StatusPill status="PENDING" />
+                <StatusPill status="DISPUTED" />
+                <StatusPill status="FUNDED" />
+                <StatusPill status="AWAITING_FUNDING" />
               </div>
               <div className="flex items-baseline gap-5 pt-3 border-t border-border">
                 <AmountText amount={15000} size="sm" />

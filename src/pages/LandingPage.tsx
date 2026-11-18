@@ -1,423 +1,926 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  AlertCircle,
+  AngleDown,
   ArrowRight,
-  CheckCircle,
-  Play,
-  ShieldCheck,
+  CloseCircle,
+  Menu,
 } from 'reicon-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { AmountText } from '@/components/pw/AmountText'
-import { GradeBadge } from '@/components/pw/GradeBadge'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 import { RevealSection } from '@/components/pw/RevealSection'
 import { ScrollRevealText } from '@/components/pw/ScrollRevealText'
-import { StatusPill } from '@/components/pw/StatusPill'
-
-const WITHOUT_ITEMS = [
-  {
-    title: 'NIP / OKOYE C. — ₦15,000',
-    note: 'Bank statement shows a deposit, not whether it was bricklaying or a birthday gift.',
-    tilt: '-rotate-2',
-  },
-  {
-    title: 'Paper notebook lost in rain',
-    note: 'Cash jobs vanish from memory. No receipts, no repeat-client trail.',
-    tilt: 'rotate-1',
-  },
-  {
-    title: 'Self-typed spreadsheets',
-    note: 'Lenders reject worker-entered logs because anyone can type fake numbers.',
-    tilt: '-rotate-1',
-  },
-  {
-    title: '“Bring 6 months of statements”',
-    note: '41M informal workers turned away before a loan officer even reads their story.',
-    tilt: 'rotate-2',
-  },
-]
-
-const WITH_ITEMS = [
-  {
-    title: 'Dedicated Paga NUBAN',
-    highlight: '3104829104 · Auto-sweeps to bank',
-    note: 'Paga webhooks log every transfer without Proofwork ever holding funds.',
-    footer: 'Webhook verified',
-  },
-  {
-    title: 'One-tap client confirm',
-    highlight: '“Yes, this was for work” · Bricklaying',
-    note: 'Client confirms in 15 seconds with no app. Numbered receipt issued.',
-    footer: 'Receipt issued',
-  },
-  {
-    title: 'Signed Lender Report',
-    highlight: '82 / 100 · Trusted · Ed25519 JSON',
-    note: 'Tokenized clients, active months, and cash capped at 20%.',
-    footer: 'Ready for underwriting',
-  },
-]
+import { WhoItsForSection } from '@/components/pw/WhoItsForSection'
 
 const FOUR_STEPS = [
   {
     num: '01',
-    title: 'Client pays through Paga',
-    body: 'Through Emem’s Proofwork link (Grade 1) or his 10-digit Paga Subsidiary Account (Grade 2). Funds sweep straight to his bank.',
+    title: 'Employer funds job upfront',
+    body: 'Employer picks an artisan like Emem Ekpo, sets the daily rate and days, and locks total funds via a one-time Paga NUBAN or payment link.',
   },
   {
     num: '02',
-    title: 'Webhook verifies & reconciles',
-    body: 'Proofwork verifies x-paga-hash-v3, deduplicates by idempotency key, and confirms settlement against Paga /status.',
+    title: 'Worker marks each day done',
+    body: 'On Telegram, Web, or USSD (*123#), Emem taps Done at close of day. That starts a 24-hour confirmation window.',
   },
   {
     num: '03',
-    title: 'Client confirms in one tap',
-    body: 'No app, no account. The client picks the job type from a fixed list and taps "Yes, this was for work" to issue a receipt.',
+    title: 'Employer or supervisor confirms',
+    body: 'One tap releases that day’s tranche to Emem’s Paga account with full score weight. After 24h with no dispute, auto-release pays out.',
   },
   {
     num: '04',
     title: 'Lender reads signed snapshot',
-    body: 'With Emem’s consent, the lender opens an expiring report and copies the Ed25519-signed JSON snapshot for underwriting.',
+    body: 'With Emem’s consent, the lender opens an expiring report showing employer-confirmed, supervisor-confirmed, and auto-released days.',
   },
 ]
 
 const FAQS = [
   {
-    q: 'Do clients need a smartphone app or a Proofwork account?',
-    a: 'No. Clients open a single web link from WhatsApp or SMS, pick the job type, and confirm in one tap.',
+    q: 'Do employers or workers need to install a mobile app?',
+    a: 'No. Workers mostly use Telegram or USSD (*123#), and employers can fund and confirm directly on the web or via Telegram.',
   },
   {
-    q: 'How does Proofwork stop workers from faking their own income?',
-    a: 'A job typed in by the worker stays a draft and counts for zero. Only a client payment and client confirmation create a confirmed record, and circular flows are flagged openly.',
+    q: 'How does Provo stop workers from faking their own income?',
+    a: 'Every job starts with the employer locking the full pay through Paga before work begins. A worker can only mark a funded day done, and employer-confirmed days carry full score weight.',
   },
   {
-    q: 'Does Proofwork hold the worker’s money?',
-    a: 'No. Paga Subsidiary Accounts auto-sweep directly to the worker’s bank account so Proofwork stays a zero-custody verification layer.',
+    q: 'What happens if an employer forgets to confirm a day?',
+    a: 'A 24-hour window runs after the worker marks the day done. If the employer does not dispute within 24 hours, the scheduler releases that day’s pay automatically at lower score weight.',
   },
   {
-    q: 'How are cash jobs treated?',
-    a: 'Cash jobs require client confirmation, display a lighter dashed Grade 3 pill, and are capped at 20% of the score.',
+    q: 'Can a site supervisor confirm days on the employer’s behalf?',
+    a: 'Yes. An employer can name a supervisor on multi-day jobs so a foreman on site can confirm or dispute each day’s work.',
+  },
+  {
+    q: 'How do lenders verify a worker’s Provo record?',
+    a: 'With the worker’s explicit consent, Provo generates an expiring report link with tokenized employer identities and an Ed25519-signed JSON snapshot.',
   },
 ]
 
 export function LandingPage() {
-  const [openFaq, setOpenFaq] = useState<number>(0)
+  const [openFaq, setOpenFaq] = useState<number>(1)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [joined, setJoined] = useState(false)
+  const stepsRef = useRef<HTMLDivElement>(null)
+  const [stepsProgress, setStepsProgress] = useState(0)
+
+  useEffect(() => {
+    let raf = 0
+    const updateSteps = () => {
+      const el = stepsRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const vh = window.innerHeight
+      const raw = (vh * 0.82 - rect.top) / Math.max(1, rect.height * 0.85)
+      setStepsProgress(Math.max(0, Math.min(1, raw)))
+    }
+    const onScroll = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(updateSteps)
+    }
+    updateSteps()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="sticky top-4 z-30 mx-auto max-w-3xl px-4">
-        <header className="flex items-center justify-between rounded-full border border-border bg-card/90 px-4 py-2 backdrop-blur-md shadow-[var(--pw-shadow-card)]">
-          <Link to="/" className="flex items-center gap-2 pl-1 font-semibold text-foreground">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-[3px] bg-[var(--pw-brick)]"
-              aria-hidden="true"
-            />
-            <span>Proofwork</span>
+      <div className="fixed top-4 inset-x-0 z-50 mx-auto max-w-4xl px-4">
+        <header className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center rounded-full border border-white/70 bg-white/75 pl-7 pr-2.5 py-2 backdrop-blur-md shadow-[0_8px_30px_rgba(0,49,112,0.08)] text-sm">
+          <div className="flex items-center justify-start gap-6">
+            <a
+              href="#how-it-works"
+              onClick={(e) => {
+                e.preventDefault()
+                document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="whitespace-nowrap font-medium text-foreground/80 hover:text-foreground transition-colors"
+            >
+              How it Works
+            </a>
+            <a
+              href="#who-its-for"
+              onClick={(e) => {
+                e.preventDefault()
+                document.getElementById('who-its-for')?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="whitespace-nowrap font-medium text-foreground/80 hover:text-foreground transition-colors"
+            >
+              Who it’s For
+            </a>
+            <Link
+              to="/ussd"
+              className="whitespace-nowrap font-medium text-foreground/80 hover:text-foreground transition-colors"
+            >
+              USSD Simulator
+            </Link>
+          </div>
+
+          <Link
+            to="/"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="inline-flex items-center gap-2 px-4 text-center text-xl font-extrabold tracking-tight text-primary"
+          >
+            <ProvoMark className="h-6 w-6" />
+            <span>Provo</span>
           </Link>
-          <nav className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#how-it-works" className="hover:text-foreground transition-colors">
-              How it works
-            </a>
-            <a href="#grades" className="hover:text-foreground transition-colors">
-              Grades
-            </a>
-            <Link to="/design-system" className="hover:text-foreground transition-colors">
-              Design system
+
+          <div className="flex items-center justify-end gap-6">
+            <Link
+              to="/docs"
+              className="whitespace-nowrap font-medium text-foreground/80 hover:text-foreground transition-colors"
+            >
+              Docs
             </Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            <Link to="/report/rep_emem_lapo_2026" className="hidden sm:inline-block">
-              <Button size="sm" variant="ghost" className="rounded-full">
-                Lender view
-              </Button>
-            </Link>
-            <Link to="/worker">
-              <Button size="sm" className="rounded-full">
-                Open demo
-              </Button>
+            <a
+              href="#faq"
+              onClick={(e) => {
+                e.preventDefault()
+                document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="whitespace-nowrap font-medium text-foreground/80 hover:text-foreground transition-colors"
+            >
+              FAQ
+            </a>
+            <Link
+              to="/sign-in"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 active:scale-[0.96] transition-[background-color,scale] duration-150 ease-out"
+            >
+              <span>Sign in</span>
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
         </header>
+
+        <header className="md:hidden relative flex items-center justify-center rounded-full border border-white/70 bg-white/80 px-5 py-3.5 backdrop-blur-md shadow-[0_8px_24px_rgba(0,49,112,0.08)]">
+          <Link
+            to="/"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="inline-flex items-center gap-2 text-xl font-extrabold tracking-tight text-primary"
+          >
+            <ProvoMark className="h-6 w-6" />
+            <span>Provo</span>
+          </Link>
+          <button
+            type="button"
+            aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setMobileNavOpen((v) => !v)}
+            className="absolute right-4 flex h-9 w-9 items-center justify-center rounded-full text-foreground cursor-pointer"
+          >
+            {mobileNavOpen ? (
+              <CloseCircle className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            )}
+          </button>
+        </header>
+
+        {mobileNavOpen && (
+          <div className="md:hidden mt-2 rounded-[20px] border border-white/70 bg-card/95 p-4 backdrop-blur-md shadow-[var(--pw-shadow-sheet)] space-y-1.5 text-sm">
+            <a
+              href="#how-it-works"
+              onClick={(e) => {
+                e.preventDefault()
+                setMobileNavOpen(false)
+                document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="block rounded-[10px] px-3 py-2 font-medium text-foreground hover:bg-muted"
+            >
+              How it Works
+            </a>
+            <a
+              href="#who-its-for"
+              onClick={(e) => {
+                e.preventDefault()
+                setMobileNavOpen(false)
+                document.getElementById('who-its-for')?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="block rounded-[10px] px-3 py-2 font-medium text-foreground hover:bg-muted"
+            >
+              Who it’s For
+            </a>
+            <a
+              href="#faq"
+              onClick={(e) => {
+                e.preventDefault()
+                setMobileNavOpen(false)
+                document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="block rounded-[10px] px-3 py-2 font-medium text-foreground hover:bg-muted"
+            >
+              FAQ
+            </a>
+            <Link
+              to="/ussd"
+              onClick={() => setMobileNavOpen(false)}
+              className="block rounded-[10px] px-3 py-2 font-medium text-foreground hover:bg-muted"
+            >
+              USSD Simulator
+            </Link>
+            <Link
+              to="/docs"
+              onClick={() => setMobileNavOpen(false)}
+              className="block rounded-[10px] px-3 py-2 font-medium text-foreground hover:bg-muted"
+            >
+              Docs
+            </Link>
+            <div className="pt-2">
+              <Link
+                to="/sign-in"
+                onClick={() => setMobileNavOpen(false)}
+                className="block rounded-full bg-primary px-4 py-2.5 text-center text-xs font-semibold text-primary-foreground"
+              >
+                Sign in
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
 
-      <main className="mx-auto max-w-5xl px-4 pt-14 pb-20 space-y-24">
-        <section className="grid gap-10 lg:grid-cols-12 lg:items-center">
-          <div className="lg:col-span-7 space-y-5">
-            <h1 className="text-4xl sm:text-6xl font-semibold tracking-tight text-foreground leading-[1.04]">
-              Real work, counted. Real income, proven.
-            </h1>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-xl">
-              Proofwork gives bricklayers, tailors, and mechanics a dedicated Paga account and
-              payment link. Every client payment is confirmed in one tap and turned into a credit
-              record lenders can trust.
-            </p>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-              <Link to="/worker">
-                <Button className="w-full sm:w-auto rounded-full">
-                  <span>Open worker demo</span>
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </Link>
-              <a href="#how-it-works">
-                <Button variant="secondary" className="w-full sm:w-auto rounded-full">
-                  <Play weight="Filled" className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>See how it works</span>
-                </Button>
-              </a>
-            </div>
-          </div>
-
-          <div className="lg:col-span-5">
-            <Card className="p-5 space-y-4 bg-card">
-              <div className="flex items-center justify-between border-b border-border pb-3">
-                <div>
-                  <p className="text-xs font-medium text-primary">Trusted tier</p>
-                  <p className="text-base font-semibold text-foreground">
-                    Emem Bassey · Bricklayer
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold tabular-nums text-foreground">82</span>
-                  <span className="text-xs text-muted-foreground"> / 100</span>
-                </div>
-              </div>
-
-              <div className="divide-y divide-border">
-                <div className="py-3 first:pt-0 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">
-                      Client A3F · Bricklaying
-                    </span>
-                    <AmountText amount={42000} size="sm" />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <GradeBadge grade={1} size="sm" />
-                    <StatusPill status="confirmed" />
-                  </div>
-                </div>
-
-                <div className="py-3 last:pb-0 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">
-                      Client B7K · Renovation
-                    </span>
-                    <AmountText amount={32000} size="sm" />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <GradeBadge grade={2} size="sm" />
-                    <StatusPill status="confirmed" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-                <span>Ed25519 signed snapshot</span>
-                <Link
-                  to="/report/rep_emem_lapo_2026"
-                  className="font-medium text-primary hover:underline"
-                >
-                  Inspect report →
-                </Link>
-              </div>
-            </Card>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-3xl py-6">
-          <ScrollRevealText
-            text="Across Africa, 83% of jobs are informal. Artisans earn money every week, yet bank statements cannot tell a job payment from a gift. Proofwork pairs Paga payment records with one-tap client confirmation so real work finally counts toward credit."
-            className="text-2xl sm:text-4xl font-semibold tracking-tight leading-[1.2] text-foreground"
+      <section
+        className="relative overflow-hidden pt-20 sm:pt-24 pb-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(0, 49, 112, 0.15) 0%, rgba(0, 49, 112, 0.08) 70%, rgba(0, 49, 112, 0.04) 100%)',
+        }}
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 1440 900"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+        >
+          <path
+            d="M0,460 C320,330 540,560 880,410 C1140,295 1300,370 1440,310 L1440,900 L0,900 Z"
+            fill="rgba(0, 49, 112, 0.09)"
           />
-        </section>
+          <path
+            d="M0,610 C280,480 610,360 940,520 C1180,635 1320,540 1440,470 L1440,900 L0,900 Z"
+            fill="rgba(0, 49, 112, 0.12)"
+          />
+          <path
+            d="M180,900 C310,640 510,510 720,510 C930,510 1130,640 1260,900 Z"
+            fill="rgba(0, 49, 112, 0.10)"
+          />
+        </svg>
 
-        <RevealSection className="space-y-6">
-          <div className="rounded-[var(--pw-radius-lg)] bg-foreground text-background p-8 sm:p-12 space-y-8">
-            <h2 className="text-2xl sm:text-4xl font-semibold text-center tracking-tight">
-              Without Proofwork
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {WITHOUT_ITEMS.map((item) => (
-                <div
-                  key={item.title}
-                  className={`rounded-[var(--pw-radius-sm)] border border-background/15 bg-background/5 p-5 space-y-2 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:rotate-0 hover:-translate-y-1 ${item.tilt}`}
-                >
-                  <div className="flex items-center gap-2 text-sm font-medium text-background">
-                    <AlertCircle className="h-4 w-4 text-[var(--pw-brick)] shrink-0" />
-                    <span>{item.title}</span>
-                  </div>
-                  <p className="text-xs text-background/70 pl-6 leading-relaxed">{item.note}</p>
-                </div>
-              ))}
-            </div>
+        <div className="relative z-20 mx-auto max-w-4xl px-4 pt-6 sm:pt-8 text-center space-y-3.5">
+          <div
+            className="hero-enter inline-flex items-center gap-2 rounded-full border border-white/75 bg-white/65 px-3.5 py-1.5 backdrop-blur-xs shadow-2xs"
+            style={{ animationDelay: '40ms' }}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 16"
+              className="h-3.5 w-5 rounded-[2px] shadow-2xs shrink-0"
+            >
+              <rect width="8" height="16" x="0" y="0" fill="#008751" />
+              <rect width="8" height="16" x="8" y="0" fill="#FFFFFF" />
+              <rect width="8" height="16" x="16" y="0" fill="#008751" />
+            </svg>
+            <span className="text-xs sm:text-sm font-medium text-foreground/85">
+              Built for Africans, but Nigeria first
+            </span>
           </div>
 
-          <div className="rounded-[var(--pw-radius-lg)] border border-border bg-muted/40 p-8 sm:p-12 space-y-8">
-            <h2 className="text-2xl sm:text-4xl font-semibold text-center tracking-tight text-foreground">
-              With Proofwork
-            </h2>
-            <div className="grid gap-4 md:grid-cols-3">
-              {WITH_ITEMS.map((item) => (
-                <Card
-                  key={item.title}
-                  className="p-5 flex flex-col justify-between gap-5 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <CheckCircle weight="Filled" className="h-4 w-4 text-primary shrink-0" />
-                      <span>{item.title}</span>
-                    </div>
-                    <div className="rounded-[var(--pw-radius-sm)] border border-border bg-background px-3 py-2 font-mono text-xs text-foreground">
-                      {item.highlight}
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{item.note}</p>
+          <h1
+            className="hero-enter mx-auto max-w-2xl text-4xl sm:text-6xl font-semibold tracking-tight text-foreground leading-[1.06]"
+            style={{ animationDelay: '130ms' }}
+          >
+            Real work, counted.
+            <br />
+            Real income, proven.
+          </h1>
+
+          <p
+            className="hero-enter mx-auto max-w-lg text-sm sm:text-lg text-muted-foreground leading-relaxed"
+            style={{ animationDelay: '220ms' }}
+          >
+            Employers lock job pay through Paga before work begins. Bricklayers, electricians, and
+            tilers mark each day done on Telegram or USSD in one tap.
+          </p>
+
+          <div
+            className="hero-enter flex flex-wrap items-center justify-center gap-3 pt-1"
+            style={{ animationDelay: '310ms' }}
+          >
+            <Link to="/sign-in">
+              <Button className="rounded-full">
+                <span>Get started</span>
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </Link>
+            <a href="https://t.me/Provvobot" target="_blank" rel="noreferrer">
+              <Button variant="secondary" className="rounded-full bg-white/80 backdrop-blur-xs">
+                <span>Open Telegram Bot</span>
+              </Button>
+            </a>
+          </div>
+        </div>
+
+        <div
+          className="hero-mockup-enter relative z-20 mx-auto mt-3 sm:mt-4 flex max-w-5xl items-end justify-center px-2 pt-2 -mb-14 sm:-mb-24"
+          style={{ animationDelay: '380ms' }}
+        >
+          <Link
+            to="/ussd"
+            aria-label="Open USSD Simulator"
+            className="group relative z-10 -mr-3 sm:-mr-8 origin-bottom-right -rotate-[7deg] sm:-rotate-[11deg] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:z-30 hover:-translate-y-3"
+          >
+            <div className="relative w-[148px] sm:w-[268px] drop-shadow-[0_28px_55px_rgba(11,22,40,0.38)] select-none">
+              <img
+                src="/feature-phone.png"
+                alt="Feature phone running Provo USSD"
+                className="block w-full h-auto"
+              />
+
+              <div className="absolute top-[9.5%] left-[13.5%] right-[13.5%] h-[42.5%] flex flex-col justify-between rounded-[4px] bg-[#0e1518] p-1.5 sm:p-3 text-left font-sans text-white overflow-hidden border border-white/10">
+                <div className="flex items-center justify-between pb-0.5 text-[7px] sm:text-[10px] font-mono text-white">
+                  <span className="inline-flex items-end gap-[1px] sm:gap-[1.5px]">
+                    <span className="h-[3px] sm:h-[4px] w-[1.5px] sm:w-[2px] bg-white inline-block" />
+                    <span className="h-[5px] sm:h-[6px] w-[1.5px] sm:w-[2px] bg-white inline-block" />
+                    <span className="h-[7px] sm:h-[8px] w-[1.5px] sm:w-[2px] bg-white inline-block" />
+                    <span className="h-[9px] sm:h-[10px] w-[1.5px] sm:w-[2px] bg-white inline-block" />
+                    <span className="ml-0.5 sm:ml-1 text-[6.5px] sm:text-[9px] leading-none">2G</span>
+                  </span>
+                  <span className="leading-none">17:41</span>
+                  <span className="inline-flex items-center gap-0.5">
+                    <span className="h-1.5 w-3 sm:h-2 sm:w-3.5 rounded-[1px] border border-white bg-white inline-block" />
+                    <span className="h-1 w-0.5 bg-white inline-block" />
+                  </span>
+                </div>
+
+                <div className="relative flex-1 pr-2 flex flex-col justify-center">
+                  <div className="space-y-0.5 sm:space-y-1 text-[8px] sm:text-[13px] leading-[1.3] sm:leading-[1.35] font-medium tracking-tight text-white">
+                    <p className="font-semibold">Welcome to PROVO</p>
+                    <p>1. Balance</p>
+                    <p>2. Pending Jobs</p>
+                    <p>3. Withdraw</p>
                   </div>
-                  <p className="text-xs font-medium text-primary border-t border-border pt-3">
-                    {item.footer}
-                  </p>
-                </Card>
-              ))}
+                  <div className="absolute right-0 top-0.5 bottom-0.5 w-[2.5px] sm:w-[3px] bg-white/20 rounded-full">
+                    <div className="h-3/5 w-full bg-white rounded-full" />
+                  </div>
+                </div>
+
+                <div className="mt-1 -mx-1.5 sm:-mx-3 -mb-1.5 sm:-mb-3 border-t border-white/15 bg-white/10 px-2 sm:px-2.5 py-0.5 sm:py-1 flex items-center justify-between text-[7.5px] sm:text-[11px] text-white">
+                  <span className="w-4 sm:w-6" />
+                  <span className="font-bold">Select</span>
+                  <span>Back</span>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/sign-in?role=worker"
+            aria-label="Open Worker Sign In"
+            className="group relative z-20 -ml-3 sm:-ml-8 origin-bottom-left -translate-y-3 sm:-translate-y-8 rotate-[6deg] sm:rotate-[10deg] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:z-30 hover:-translate-y-5 sm:hover:-translate-y-11"
+          >
+            <div className="relative w-[178px] sm:w-[328px] rounded-[34px] sm:rounded-[50px] bg-gradient-to-b from-[#434d5e] via-[#252d3a] to-[#141922] p-[2.5px] sm:p-[3px] shadow-[0_34px_75px_rgba(11,22,40,0.45)] select-none">
+              <span
+                aria-hidden="true"
+                className="hidden sm:block absolute -left-[5px] top-24 h-6 w-[3px] rounded-l-sm bg-[#3a4352]"
+              />
+              <span
+                aria-hidden="true"
+                className="hidden sm:block absolute -left-[5px] top-36 h-11 w-[3px] rounded-l-sm bg-[#3a4352]"
+              />
+              <span
+                aria-hidden="true"
+                className="hidden sm:block absolute -left-[5px] top-50 h-11 w-[3px] rounded-l-sm bg-[#3a4352]"
+              />
+              <span
+                aria-hidden="true"
+                className="hidden sm:block absolute -right-[5px] top-40 h-14 w-[3px] rounded-r-sm bg-[#3a4352]"
+              />
+
+              <div className="rounded-[31px] sm:rounded-[47px] bg-[#080b10] p-[5px] sm:p-[9px]">
+                <div className="aspect-[9/19.5] flex flex-col justify-between overflow-hidden rounded-[26px] sm:rounded-[38px] bg-[#131c24] text-white">
+                  <div>
+                    <div className="grid grid-cols-3 items-center px-3 sm:px-5 pt-2 sm:pt-2.5 pb-1 text-[8px] sm:text-[12px] font-semibold text-white">
+                      <span className="tracking-tight">9:41</span>
+                      <div className="mx-auto flex h-[14px] sm:h-[22px] w-[50px] sm:w-[86px] items-center justify-end rounded-full bg-black px-1.5 sm:px-2">
+                        <span className="h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full bg-[#131d36] ring-1 ring-white/15" />
+                      </div>
+                      <div className="flex items-center justify-end gap-1 sm:gap-1.5 text-white">
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 18 12"
+                          className="h-2 sm:h-3 w-auto fill-current"
+                        >
+                          <rect x="1" y="8" width="2.5" height="4" rx="0.8" />
+                          <rect x="5" y="6" width="2.5" height="6" rx="0.8" />
+                          <rect x="9" y="3.5" width="2.5" height="8.5" rx="0.8" />
+                          <rect x="13" y="1" width="2.5" height="11" rx="0.8" />
+                        </svg>
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 16 12"
+                          className="h-2 sm:h-3 w-auto fill-current"
+                        >
+                          <path d="M8 9.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8Zm-3.6-2a5.2 5.2 0 0 1 7.2 0l1.2-1.2a6.9 6.9 0 0 0-9.6 0l1.2 1.2Zm-2.8-2.8a9.2 9.2 0 0 1 12.8 0l1.2-1.2a10.9 10.9 0 0 0-15.2 0l1.2 1.2Z" />
+                        </svg>
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 25 12"
+                          className="h-2 sm:h-3 w-auto"
+                        >
+                          <rect
+                            x="0.75"
+                            y="1"
+                            width="20.5"
+                            height="10"
+                            rx="3"
+                            stroke="currentColor"
+                            strokeOpacity="0.45"
+                            strokeWidth="1.2"
+                            fill="none"
+                          />
+                          <rect
+                            x="2.3"
+                            y="2.5"
+                            width="17.4"
+                            height="7"
+                            rx="1.6"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M22.5 4.2v3.6a1.6 1.6 0 0 0 0-3.6Z"
+                            fill="currentColor"
+                            fillOpacity="0.45"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <div className="px-2 sm:px-2.5 pt-0.5 pb-1 flex items-center gap-1 sm:gap-1.5">
+                      <span className="flex h-5 w-5 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#1f2c38] text-[9px] sm:text-xs text-white/85">
+                        ←
+                      </span>
+                      <div className="flex flex-1 items-center gap-1.5 sm:gap-2 rounded-full bg-[#1f2c38] px-2 sm:px-2.5 py-0.5 sm:py-1">
+                        <span className="flex h-4 w-4 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full bg-[#e58e49] text-[8px] sm:text-[11px] font-bold text-white">
+                          P
+                        </span>
+                        <div className="min-w-0 leading-tight">
+                          <p className="truncate text-[8.5px] sm:text-[11.5px] font-bold text-white">
+                            Provo
+                          </p>
+                          <p className="text-[7px] sm:text-[9px] text-white/55">bot</p>
+                        </div>
+                      </div>
+                      <span className="flex h-5 w-5 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#1f2c38] text-[9px] sm:text-xs text-white/85">
+                        ⋮
+                      </span>
+                    </div>
+
+                    <div className="hidden sm:block px-2.5 pb-1.5">
+                      <div className="rounded-full bg-[#1f2c38]/85 py-1.5 text-center text-[10px] font-medium text-[#52a8ff]">
+                        📷 Set Profile Photo
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-center space-y-1.5 sm:space-y-2.5 px-2 sm:px-2.5 py-1 text-left text-[7.5px] sm:text-[10.5px] leading-snug">
+                    <div className="mx-auto w-fit rounded-full bg-[#1f2c38]/90 px-2 py-0.5 text-[7px] sm:text-[9px] font-medium text-white/75">
+                      November 17
+                    </div>
+
+                    <div className="ml-auto w-fit rounded-[10px] sm:rounded-[12px] rounded-br-[3px] bg-[#7b5ce6] px-2 sm:px-2.5 py-0.5 sm:py-1 text-white font-medium">
+                      <span>/start</span>
+                      <span className="ml-1 text-[6px] sm:text-[7px] text-white/75">12:18 ✓✓</span>
+                    </div>
+
+                    <div className="max-w-[94%] rounded-[11px] sm:rounded-[14px] rounded-bl-[3px] bg-[#1f2c38] p-1.5 sm:p-3 space-y-1 text-white/95">
+                      <p className="font-semibold">Welcome to Provo! 🛡️</p>
+                      <p className="text-white/80">
+                        Provo locks employer pay upfront, releases funds daily as work is confirmed,
+                        and creates verified records lenders can trust.
+                      </p>
+                      <p className="hidden sm:block text-white/80">
+                        To get started, tap the button below to share and verify your phone number:
+                      </p>
+                      <p className="text-right text-[6.5px] sm:text-[7.5px] text-white/45">12:18</p>
+                    </div>
+
+                    <div className="ml-auto w-[90%] rounded-[11px] sm:rounded-[14px] rounded-br-[3px] bg-[#4c71f0] p-1.5 sm:p-2.5 space-y-1 text-white">
+                      <div className="border-l-2 border-white/80 bg-black/15 px-1.5 py-0.5 rounded-[3px] text-[6.5px] sm:text-[8px]">
+                        <p className="font-semibold">Provo</p>
+                        <p className="truncate text-white/80">Welcome to Provo! 🛡️</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 sm:gap-2 pt-0.5">
+                        <span className="flex h-5 w-5 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#e76f89] text-[7.5px] sm:text-[10px] font-bold text-white">
+                          EE
+                        </span>
+                        <div className="min-w-0 leading-tight">
+                          <p className="truncate font-semibold text-[8px] sm:text-[11px]">
+                            Emem Ekpo
+                          </p>
+                          <p className="text-[6.5px] sm:text-[9px] text-white/85">
+                            +234 803 441 9210
+                          </p>
+                        </div>
+                      </div>
+                      <div className="border-t border-white/20 pt-0.5 sm:pt-1 text-center text-[6.5px] sm:text-[9px] font-semibold tracking-wider uppercase text-white/95">
+                        MESSAGE
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#18222c] p-1.5 sm:p-2.5 space-y-1 sm:space-y-1.5 border-t border-white/10">
+                    <div className="flex items-center justify-between rounded-full bg-[#212e3a] px-2.5 sm:px-3 py-0.5 sm:py-1.5 text-[7.5px] sm:text-[10px] text-white/50">
+                      <span>Message</span>
+                      <span className="h-3 w-3 sm:h-5 sm:w-5 rounded-full bg-[#2ea6ff] inline-block" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 sm:gap-1.5 text-center text-[7px] sm:text-[10px] font-semibold text-white/90">
+                      <span className="rounded-[6px] sm:rounded-[8px] bg-[#24323f] py-1 sm:py-2">
+                        💼 My Active Jobs
+                      </span>
+                      <span className="rounded-[6px] sm:rounded-[8px] bg-[#24323f] py-1 sm:py-2">
+                        ✅ Done Today
+                      </span>
+                      <span className="rounded-[6px] sm:rounded-[8px] bg-[#24323f] py-1 sm:py-2">
+                        📊 My Credit Record
+                      </span>
+                      <span className="rounded-[6px] sm:rounded-[8px] bg-[#24323f] py-1 sm:py-2">
+                        ℹ️ Help
+                      </span>
+                    </div>
+                    <div className="mx-auto mt-0.5 h-1 w-16 sm:w-24 rounded-full bg-white/35" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 1440 110"
+          preserveAspectRatio="none"
+          className="pointer-events-none relative z-30 block h-14 sm:h-24 w-full"
+        >
+          <path
+            d="M0,34 C260,108 500,-10 740,48 C980,106 1210,12 1440,52 L1440,110 L0,110 Z"
+            fill="var(--pw-bg)"
+          />
+          <path
+            d="M0,34 C260,108 500,-10 740,48 C980,106 1210,12 1440,52"
+            fill="none"
+            stroke="rgba(0, 49, 112, 0.16)"
+            strokeWidth="2"
+          />
+        </svg>
+      </section>
+
+      <main className="mx-auto max-w-7xl px-6 lg:px-10 pt-14 pb-12 sm:pb-20 space-y-14 sm:space-y-24">
+
+        <RevealSection className="mx-auto max-w-3xl text-center space-y-7 py-4">
+          <div className="space-y-3">
+            <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-foreground">
+              Built on Paga &times; Litehost
+            </h2>
+            <p className="mx-auto max-w-xl text-sm sm:text-base text-muted-foreground leading-relaxed">
+              Every naira locks and settles on PagaEngine payment rails. Every webhook, ledger
+              state transition, and Telegram bot session runs on Litehost infrastructure.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-10 pt-1">
+            <div className="flex items-center gap-3 rounded-full border border-border bg-card px-5 py-2.5 shadow-[var(--pw-shadow-card)]">
+              <img
+                src="https://qa2-checkout.paga.com/favicon.ico"
+                alt="Paga logo"
+                className="h-7 w-7 sm:h-8 sm:w-8 object-contain"
+              />
+              <div className="text-left leading-tight">
+                <p className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                  Paga
+                </p>
+                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Payment Rails
+                </p>
+              </div>
+            </div>
+
+            <span className="font-mono text-lg text-muted-foreground/60 select-none">&times;</span>
+
+            <div className="flex items-center gap-3 rounded-full border border-border bg-card px-5 py-2.5 shadow-[var(--pw-shadow-card)]">
+              <img
+                src="/litehost.svg"
+                alt="Litehost logo"
+                className="h-7 sm:h-8 w-auto rounded-[6px]"
+              />
+              <div className="text-left leading-tight">
+                <p className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                  Litehost
+                </p>
+                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Cloud Infrastructure
+                </p>
+              </div>
             </div>
           </div>
         </RevealSection>
+
+        <ScrollRevealText />
+
+        <WhoItsForSection />
+
+        <section className="rounded-[var(--pw-radius-md)] border border-border bg-card shadow-[var(--pw-shadow-card)] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-border">
+          <div className="p-5 space-y-1">
+            <p className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground">41M</p>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              Informal workers in Nigeria
+            </p>
+          </div>
+          <div className="p-5 space-y-1">
+            <p className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground">83%</p>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              Jobs across Africa (ILO 2024)
+            </p>
+          </div>
+          <div className="p-5 space-y-1">
+            <p className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground">70.7%</p>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              Borrow from friends &amp; family
+            </p>
+          </div>
+          <div className="p-5 space-y-1">
+            <p className="text-2xl sm:text-3xl font-semibold tabular-nums text-primary">&lt;15s</p>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              1-tap employer confirmation
+            </p>
+          </div>
+        </section>
 
         <RevealSection className="space-y-6">
           <div id="how-it-works" className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="space-y-1">
               <h2 className="text-2xl sm:text-3xl font-semibold text-foreground">
-                Four steps to a bank-ready record.
+                How it works
               </h2>
               <p className="text-sm text-muted-foreground">
-                Workers never self-certify their income. Every step is backed by Paga and client
-                confirmation.
+                Four steps to a bank-ready record. Workers never self-certify their income. Every
+                day is backed by locked employer pay and direct confirmation.
               </p>
             </div>
-            <Link to="/pay/emem-uyo">
+            <Link to="/sign-in?role=employer">
               <Button size="sm" variant="secondary">
-                Try pay link →
+                Try employer flow →
               </Button>
             </Link>
           </div>
-          <div className="rounded-[var(--pw-radius-md)] border border-border bg-card shadow-[var(--pw-shadow-card)] overflow-hidden grid md:grid-cols-2">
-            {FOUR_STEPS.map((s, idx) => (
-              <div
-                key={s.num}
-                className={`p-6 sm:p-8 space-y-3 ${
-                  idx < 2 ? 'border-b border-border' : ''
-                } ${idx % 2 === 0 ? 'md:border-r border-border' : ''}`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-muted-foreground">{s.num}</span>
-                  <div className="h-px flex-1 bg-border" />
+          <div
+            ref={stepsRef}
+            className="rounded-[var(--pw-radius-md)] border border-border bg-card shadow-[var(--pw-shadow-card)] overflow-hidden grid md:grid-cols-2"
+          >
+            {FOUR_STEPS.map((s, idx) => {
+              const stepStart = idx * 0.22
+              const stepFill = Math.max(0, Math.min(1, (stepsProgress - stepStart) / 0.28))
+              const isReached = stepFill > 0.15
+              return (
+                <div
+                  key={s.num}
+                  style={{
+                    opacity: 0.35 + stepFill * 0.65,
+                    transform: `translateY(${(1 - stepFill) * 18}px)`,
+                  }}
+                  className={`p-6 sm:p-8 space-y-3 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                    idx < 2 ? 'border-b border-border' : ''
+                  } ${idx % 2 === 0 ? 'md:border-r border-border' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full font-mono text-[11px] font-semibold transition-colors duration-300 ${
+                        isReached
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {s.num}
+                    </span>
+                    <div className="relative h-0.5 flex-1 overflow-hidden rounded-full bg-border">
+                      <div
+                        className="h-full bg-primary transition-[width] duration-300 ease-out"
+                        style={{ width: `${Math.round(stepFill * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground">{s.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </RevealSection>
 
-        <RevealSection className="space-y-6">
-          <div id="grades" className="space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-foreground">
-              Three evidence grades, never blurred.
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              A lender always sees how a job was verified. Cash never looks like a bank transfer.
+        <RevealSection className="relative overflow-hidden rounded-[28px] bg-primary text-primary-foreground px-6 sm:px-12 py-12 sm:py-16 space-y-10">
+          <div className="relative z-10 grid gap-6 lg:grid-cols-12 lg:items-end">
+            <div className="lg:col-span-7 space-y-2">
+              <p className="font-mono text-xs uppercase tracking-wider text-primary-foreground/65">
+                PagaEngine Infrastructure
+              </p>
+              <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight">
+                Remove Paga, the product disappears.
+              </h2>
+            </div>
+            <p className="lg:col-span-5 text-sm text-primary-foreground/80 leading-relaxed">
+              Provo cannot exist without Paga-confirmed transactions. Three PagaEngine surfaces do
+              core structural work, not decorative payments.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="p-5 space-y-3">
-              <GradeBadge grade={1} />
-              <p className="text-sm text-muted-foreground">
-                Client paid through the Proofwork link with a verified phone number. Full weight.
-              </p>
-            </Card>
-            <Card className="p-5 space-y-3">
-              <GradeBadge grade={2} />
-              <p className="text-sm text-muted-foreground">
-                Client transferred to the worker’s dedicated Paga account and confirmed. Full weight.
-              </p>
-            </Card>
-            <Card className="p-5 space-y-3">
-              <GradeBadge grade={3} />
-              <p className="text-sm text-muted-foreground">
-                Worker logged a cash job and the client confirmed it. Capped at 20% of score.
-              </p>
-            </Card>
-          </div>
-        </RevealSection>
 
-        <RevealSection className="mx-auto max-w-2xl space-y-4">
-          <h2 className="text-2xl font-semibold text-center text-foreground">
-            Questions, answered plainly.
-          </h2>
-          <div className="divide-y divide-border border-y border-border">
-            {FAQS.map((item, idx) => (
-              <div key={item.q} className="py-3.5">
-                <button
-                  type="button"
-                  onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}
-                  className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground cursor-pointer"
-                >
-                  <span>{item.q}</span>
-                  <span className="font-mono text-muted-foreground ml-4">
-                    {openFaq === idx ? '−' : '+'}
+          <div className="relative z-10 grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/15 border-y border-white/15">
+            <div className="py-6 md:py-8 md:pr-8 space-y-2">
+              <span className="font-mono text-[11px] text-primary-foreground/60">01 · Lock</span>
+              <p className="text-base font-semibold">One-time Job NUBANs</p>
+              <p className="text-xs sm:text-sm text-primary-foreground/75 leading-relaxed">
+                Generated per job so the employer locks the full amount upfront via bank transfer or
+                payment link before day 1 begins.
+              </p>
+            </div>
+            <div className="py-6 md:py-8 md:px-8 space-y-2">
+              <span className="font-mono text-[11px] text-primary-foreground/60">02 · Settle</span>
+              <p className="text-base font-semibold">Per-Day Disbursements</p>
+              <p className="text-xs sm:text-sm text-primary-foreground/75 leading-relaxed">
+                Each confirmed day (or 24-hour auto-release) triggers an idempotent Paga transfer to
+                the worker’s Paga account.
+              </p>
+            </div>
+            <div className="py-6 md:py-8 md:pl-8 space-y-2">
+              <span className="font-mono text-[11px] text-primary-foreground/60">03 · Verify</span>
+              <p className="text-base font-semibold">x-paga-hash-v3 + /status</p>
+              <p className="text-xs sm:text-sm text-primary-foreground/75 leading-relaxed">
+                SHA-512 webhook verification, idempotency keys, and /status reconciliation on every
+                funding lock and payout.
+              </p>
+            </div>
+          </div>
+
+          <div className="relative z-10 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="font-mono uppercase tracking-wider text-primary-foreground/65">
+                Lifecycle of a job day
+              </span>
+              <span className="font-mono text-primary-foreground/65">
+                funds-locked · idempotent · reconciled
+              </span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-4 pt-2">
+              {[
+                { time: 'Day 0', label: 'Employer funds Paga NUBAN' },
+                { time: 'Close of day', label: 'Worker marks Day Done' },
+                { time: '≤24h window', label: 'Employer/Supervisor confirms' },
+                { time: 'Instant', label: 'Paga payout + Work record updated' },
+              ].map((node, i) => (
+                <div key={node.time} className="relative pl-4 border-l-2 border-white/25 space-y-1">
+                  <span className="font-mono text-[11px] text-primary-foreground/65">
+                    0{i + 1} · {node.time}
                   </span>
-                </button>
-                {openFaq === idx && (
-                  <p className="pt-2 text-sm text-muted-foreground">{item.a}</p>
-                )}
-              </div>
-            ))}
+                  <p className="text-sm font-semibold">{node.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </RevealSection>
 
-        <section className="rounded-[var(--pw-radius-lg)] bg-primary text-primary-foreground p-8 sm:p-12 text-center space-y-5">
-          <div className="inline-flex items-center gap-1.5 text-xs font-medium opacity-85">
-            <ShieldCheck weight="Filled" className="h-4 w-4" aria-hidden="true" />
-            <span>Built on PagaEngine</span>
+        <RevealSection className="grid gap-8 lg:grid-cols-12 lg:items-start">
+          <div className="lg:col-span-5 space-y-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              FAQs
+            </p>
+            <h2 id="faq" className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
+              Questions, answered plainly.
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+              How Provo locks job pay, confirms daily work, and builds a verified record across
+              Telegram, Web, and USSD.
+            </p>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight">
-            Test Emem’s 4-month record live.
+
+          <div className="lg:col-span-7 flex flex-col">
+            {FAQS.map((item, idx) => {
+              const isOpen = openFaq === idx
+              const prevCollapsed = idx > 0 && openFaq !== idx - 1
+              const nextCollapsed = idx < FAQS.length - 1 && openFaq !== idx + 1
+
+              const containerClasses = isOpen
+                ? 'my-3 first:mt-0 last:mb-0 rounded-[20px] border border-border bg-card px-6 py-5 shadow-[var(--pw-shadow-card)]'
+                : [
+                    'border-x border-border bg-card px-6 py-4',
+                    !prevCollapsed ? 'rounded-t-[20px] border-t' : 'border-t border-border',
+                    !nextCollapsed ? 'rounded-b-[20px] border-b' : '',
+                  ].join(' ')
+
+              return (
+                <div key={item.q} className={containerClasses}>
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenFaq(isOpen ? -1 : idx)}
+                    className="flex w-full items-center justify-between gap-4 text-left text-sm sm:text-base font-medium text-foreground cursor-pointer"
+                  >
+                    <span>{item.q}</span>
+                    <AngleDown
+                      className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                        isOpen ? 'rotate-180' : ''
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                  {isOpen && (
+                    <p className="pt-3 text-sm text-muted-foreground leading-relaxed">{item.a}</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </RevealSection>
+      </main>
+
+      <section
+        className="relative w-full overflow-hidden pt-16 sm:pt-20 pb-0 text-center"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(0, 49, 112, 0.14) 0%, rgba(0, 49, 112, 0.08) 72%, rgba(0, 49, 112, 0.04) 100%)',
+        }}
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 1440 520"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+        >
+          <path
+            d="M0,220 C340,110 620,310 980,180 C1210,95 1340,160 1440,120 L1440,520 L0,520 Z"
+            fill="rgba(0, 49, 112, 0.09)"
+          />
+          <path
+            d="M0,330 C310,210 680,150 1020,290 C1220,375 1350,310 1440,260 L1440,520 L0,520 Z"
+            fill="rgba(0, 49, 112, 0.12)"
+          />
+        </svg>
+
+        <div className="relative z-10 mx-auto max-w-4xl px-6 space-y-5 pb-10 sm:pb-14">
+          <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-foreground">
+            Make every workday count.
           </h2>
+          <p className="mx-auto max-w-md text-sm text-muted-foreground">
+            Walk through Emem Ekpo’s 4-month bricklaying record across worker, employer, and
+            lender surfaces.
+          </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-            <Link to="/worker">
-              <Button variant="secondary" size="md" className="rounded-full">
-                Worker view
+            <Link to="/sign-in?role=worker">
+              <Button size="md" className="rounded-full">
+                Open worker demo
               </Button>
             </Link>
-            <Link to="/pay/emem-uyo">
-              <Button variant="secondary" size="md" className="rounded-full">
-                Client pay link
+            <Link to="/sign-in?role=employer">
+              <Button variant="secondary" size="md" className="rounded-full bg-white/80">
+                Employer flow
               </Button>
             </Link>
-            <Link to="/report/rep_emem_lapo_2026">
-              <Button variant="secondary" size="md" className="rounded-full">
+            <Link
+              to={
+                import.meta.env.VITE_USE_MOCK === 'true'
+                  ? '/report/rep_emem_lapo_2026'
+                  : '/report/EMEM-CREDIT-EVAL-2026'
+              }
+            >
+              <Button variant="secondary" size="md" className="rounded-full bg-white/80">
                 Lender report
               </Button>
             </Link>
-            <Link to="/admin">
-              <Button variant="secondary" size="md" className="rounded-full">
-                Admin audit ledger
-              </Button>
-            </Link>
           </div>
-        </section>
-      </main>
+        </div>
+
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 1440 110"
+          preserveAspectRatio="none"
+          className="pointer-events-none relative z-20 block h-14 sm:h-24 w-full"
+        >
+          <path
+            d="M0,34 C260,108 500,-10 740,48 C980,106 1210,12 1440,52 L1440,110 L0,110 Z"
+            fill="var(--foreground)"
+          />
+        </svg>
+      </section>
 
       <footer className="bg-foreground text-background">
-        <div className="mx-auto max-w-5xl px-4 pt-14 pb-10 space-y-12">
+        <div className="mx-auto max-w-5xl px-4 pt-10 pb-6 space-y-12">
           <div className="grid gap-10 lg:grid-cols-12">
             <div className="lg:col-span-4 space-y-4">
               <Link to="/" className="flex items-center gap-2 font-semibold text-background">
-                <span
-                  className="inline-block h-3 w-3 rounded-[3px] bg-[var(--pw-brick)]"
-                  aria-hidden="true"
-                />
-                <span>Proofwork</span>
+                <ProvoMark className="h-5 w-5" />
+                <span>Provo</span>
               </Link>
               <p className="text-xs text-background/70 max-w-xs">
                 Payer-confirmed income records for informal workers, powered by PagaEngine.
@@ -457,19 +960,29 @@ export function LandingPage() {
                 <p className="font-medium uppercase tracking-wider text-background/50">Surfaces</p>
                 <ul className="space-y-2 text-background/80">
                   <li>
-                    <Link to="/worker" className="hover:text-background">
+                    <Link to="/sign-in?role=worker" className="hover:text-background">
                       Worker app
                     </Link>
                   </li>
                   <li>
-                    <Link to="/pay/emem-uyo" className="hover:text-background">
-                      Client pay link
+                    <Link to="/sign-in?role=employer" className="hover:text-background">
+                      Employer flow
                     </Link>
                   </li>
                   <li>
-                    <Link to="/confirm/tok_confirm_110" className="hover:text-background">
-                      One-tap confirm
+                    <Link to="/ussd" className="hover:text-background">
+                      USSD Simulator
                     </Link>
+                  </li>
+                  <li>
+                    <a
+                      href="https://t.me/Provvobot"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:text-background"
+                    >
+                      Telegram Bot (@Provvobot)
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -478,7 +991,14 @@ export function LandingPage() {
                 <p className="font-medium uppercase tracking-wider text-background/50">Lenders</p>
                 <ul className="space-y-2 text-background/80">
                   <li>
-                    <Link to="/report/rep_emem_lapo_2026" className="hover:text-background">
+                    <Link
+                      to={
+                        import.meta.env.VITE_USE_MOCK === 'true'
+                          ? '/report/rep_emem_lapo_2026'
+                          : '/report/EMEM-CREDIT-EVAL-2026'
+                      }
+                      className="hover:text-background"
+                    >
                       Sample report
                     </Link>
                   </li>
@@ -499,13 +1019,13 @@ export function LandingPage() {
                 <p className="font-medium uppercase tracking-wider text-background/50">System</p>
                 <ul className="space-y-2 text-background/80">
                   <li>
-                    <Link to="/design-system" className="hover:text-background">
-                      Design system
-                    </Link>
-                  </li>
-                  <li>
                     <a href="#how-it-works" className="hover:text-background">
                       How it works
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#who-its-for" className="hover:text-background">
+                      Who it’s for
                     </a>
                   </li>
                   <li>
@@ -529,30 +1049,36 @@ export function LandingPage() {
                       Terms of Use
                     </Link>
                   </li>
-                  <li>NDPA consent</li>
+                  <li>
+                    <Link to="/ndpa" className="hover:text-background">
+                      NDPA consent
+                    </Link>
+                  </li>
                 </ul>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="overflow-hidden select-none pt-4">
-            <p
-              aria-label="proofwork"
-              className="flex justify-center text-[16vw] sm:text-[138px] font-bold tracking-[-0.04em] leading-[0.88]"
-            >
-              {'proofwork'.split('').map((char, idx) => (
-                <span
-                  key={`${char}-${idx}`}
-                  className="inline-block text-background/20 transition-[transform,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-3 hover:text-background/95 cursor-default"
-                >
-                  {char}
-                </span>
-              ))}
-            </p>
-          </div>
+        <div className="w-full overflow-hidden select-none pt-2">
+          <p
+            aria-label="provo"
+            className="flex justify-center text-[34vw] sm:text-[31vw] font-bold tracking-[-0.06em] leading-[0.76]"
+          >
+            {'provo'.split('').map((char, idx) => (
+              <span
+                key={`${char}-${idx}`}
+                className="inline-block text-background/20 transition-[transform,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-4 hover:text-background/95 cursor-default"
+              >
+                {char}
+              </span>
+            ))}
+          </p>
+        </div>
 
+        <div className="mx-auto max-w-5xl px-4 pb-10 pt-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-background/15 pt-6 text-xs text-background/60">
-            <p>© 2026 Proofwork. Built for TechIgnite 2026.</p>
+            <p>© 2026 Provo. Built for TechIgnite 2026.</p>
             <p>Powered by PagaEngine Subsidiary Accounts &amp; Collect API</p>
           </div>
         </div>

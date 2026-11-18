@@ -27,15 +27,15 @@ export function AdminPage() {
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
       <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-10 py-3.5">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            <span>Proofwork Admin</span>
+            <span>Provo Admin</span>
           </Link>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 space-y-8">
+      <main className="mx-auto max-w-7xl px-6 lg:px-10 py-8 space-y-8">
         <section className="space-y-3">
           <h1 className="text-xl font-semibold text-foreground">Disputes</h1>
           {disputes.length === 0 ? (
@@ -46,7 +46,8 @@ export function AdminPage() {
                 <Card key={d.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">
-                      {d.workerName} · Client {d.clientToken} · {formatNaira(d.amount)}
+                      {d.workerName} · Day {d.dayNumber} · Employer {d.clientToken} ·{' '}
+                      {formatNaira(d.amountNaira)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Reason: {d.reason} · Raised by {d.raisedBy} · {formatShortDate(d.createdAt)} ·
@@ -114,7 +115,7 @@ export function AdminPage() {
                   </p>
                 </div>
                 <span className="font-mono text-sm font-medium tabular-nums">
-                  {formatNaira(evt.amount)}
+                  {formatNaira(evt.amountNaira)}
                 </span>
               </Card>
             ))}

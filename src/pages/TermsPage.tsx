@@ -1,22 +1,23 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, FileText } from 'reicon-react'
 import { Card } from '@/components/ui/card'
+import { SiteFooter } from '@/components/pw/SiteFooter'
 
 const SHORT_TERMS = [
   {
     num: '01',
     title: 'Zero custody',
-    body: 'Payments sent to your dedicated Paga Subsidiary Account auto-sweep to your bank account. Proofwork does not hold your money.',
+    body: 'Payments sent to your dedicated Paga Subsidiary Account auto-sweep to your bank account. Provo does not hold your money.',
   },
   {
     num: '02',
     title: 'Only confirmed work counts',
-    body: 'Jobs you log yourself stay drafts and count for zero until a client confirms them. Attempting circular payments will flag your score.',
+    body: 'Jobs you log yourself stay drafts and count for zero until an employer confirms them. Attempting circular payments will flag your score.',
   },
   {
     num: '03',
     title: 'Report provider only',
-    body: 'Proofwork provides verified income reports to lenders you choose. We do not underwrite or disburse loans directly.',
+    body: 'Provo provides verified income reports to lenders you choose. We do not underwrite or disburse loans directly.',
   },
   {
     num: '04',
@@ -32,7 +33,7 @@ export function TermsPage() {
         <header className="flex items-center justify-between rounded-full border border-border bg-card/90 px-4 py-2 backdrop-blur-md shadow-[var(--pw-shadow-card)]">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            <span>Proofwork</span>
+            <span>Provo</span>
           </Link>
           <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
             <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
@@ -51,7 +52,7 @@ export function TermsPage() {
             Terms of Use.
           </h1>
           <p className="text-base text-muted-foreground max-w-xl mx-auto">
-            The rules that keep Proofwork records trustworthy for workers, clients, and lenders.
+            The rules that keep Provo records trustworthy for workers, employers, and lenders.
           </p>
           <div className="flex items-center justify-center gap-2 pt-1 text-xs font-mono text-muted-foreground">
             <span className="rounded-full border border-border bg-card px-3 py-1">
@@ -78,10 +79,10 @@ export function TermsPage() {
         <section className="space-y-8 max-w-2xl mx-auto">
           <div className="space-y-2">
             <p className="font-mono text-xs text-muted-foreground">01</p>
-            <h2 className="text-xl font-semibold text-foreground">Using Proofwork</h2>
+            <h2 className="text-xl font-semibold text-foreground">Using Provo</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
               You must provide accurate trade and bank account details when creating a Paga
-              Subsidiary Account. Clients confirm payments voluntarily and receive a numbered
+              Subsidiary Account. Employers confirm payments voluntarily and receive a numbered
               receipt for each confirmed job.
             </p>
           </div>
@@ -89,7 +90,7 @@ export function TermsPage() {
             <p className="font-mono text-xs text-muted-foreground">02</p>
             <h2 className="text-xl font-semibold text-foreground">Scoring &amp; fraud rules</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Proofwork makes fraud costly and visible rather than claiming to eliminate it. Self-paid
+              Provo makes fraud costly and visible rather than claiming to eliminate it. Self-paid
               transfers or repeated circular flows between linked accounts are flagged on lender
               reports and deducted from the score.
             </p>
@@ -98,7 +99,7 @@ export function TermsPage() {
             <div className="space-y-0.5">
               <p className="text-sm font-medium text-foreground">Read our Privacy Notice</p>
               <p className="text-xs text-muted-foreground">
-                Learn how client tokens and consent links work.
+                Learn how employer tokens and consent links work.
               </p>
             </div>
             <Link to="/privacy" className="text-sm font-medium text-primary hover:underline shrink-0">
@@ -107,6 +108,8 @@ export function TermsPage() {
           </Card>
         </section>
       </main>
+
+      <SiteFooter />
     </div>
   )
 }

@@ -1,0 +1,58 @@
+---
+title: "Available workers & records"
+description: "Browse available artisans, fetch a worker's full record, or get their shareable payment link."
+api: "GET /workers/available"
+---
+
+## List available workers (`GET /workers/available`)
+
+Public directory filtered by optional `trade` and `area` query parameters.
+
+<CodeGroup>
+```bash curl
+curl "https://api.useproofwork.ng/workers/available?trade=BRICKLAYING&area=Uyo"
+```
+
+```json 200 OK
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Emem Bassey",
+    "trade": "BRICKLAYING",
+    "area": "Uyo",
+    "verified_days_count": 18,
+    "paga_account_number": "1092837465",
+    "paga_payment_url": "https://beta-checkout.paga.com/me/emem-bassey"
+  }
+]
+```
+</CodeGroup>
+
+## Get worker record (`GET /workers/{worker_id}/record`)
+
+Returns the worker's detailed work history, settled earnings, and daily breakdown. Restricted to the worker or an admin.
+
+```bash curl
+curl https://api.useproofwork.ng/workers/550e8400-e29b-41d4-a716-446655440000/record \
+  -H "Authorization: Bearer <worker_token>"
+```
+
+## Get shareable payment link (`GET /workers/{worker_id}/payment-link`)
+
+<CodeGroup>
+```bash curl
+curl https://api.useproofwork.ng/workers/550e8400-e29b-41d4-a716-446655440000/payment-link \
+  -H "Authorization: Bearer <worker_token>"
+```
+
+```json 200 OK
+{
+  "worker_id": "550e8400-e29b-41d4-a716-446655440000",
+  "worker_name": "Emem Bassey",
+  "account_number": "1092837465",
+  "bank": "Paga",
+  "payment_url": "https://useproofwork.ng/client?worker=550e8400...",
+  "share_text": "Hire Emem Bassey on Provo with protected daily pay."
+}
+```
+</CodeGroup>

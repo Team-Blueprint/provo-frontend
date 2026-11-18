@@ -1,0 +1,55 @@
+---
+title: "Jobs, funding & daily decisions"
+description: "Create jobs, get one-time bank account numbers, split multi-worker days, and confirm daily work."
+---
+
+## Create a job (`POST /jobs`)
+
+Creates a job and sets up its daily payment schedule (`1..days`) in exact kobo. By default (`auto_fund_request: true`), it also asks Paga for a one-time 10-digit bank account number and payment link right away.
+
+<ParamField body="trade" type="TradeType" required>
+  Fixed trade value (e.g. `BRICKLAYING`, `PAINTING`, `PLUMBING`).
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Short description of the work (minimum 5 characters).
+</ParamField>
+
+<ParamField body="total_kobo" type="integer" required>
+  Total job pay in whole kobo (e.g. `4500000` for `₦45,000`).
+</ParamField>
+
+<ParamField body="days" type="integer" required>
+  Number of work days (`1` to `90`).
+</ParamField>
+
+<ParamField body="worker_id" type="uuid">
+  Default worker ID from `GET /workers/available`.
+</ParamField>
+
+<ParamField body="supervisor_id" type="uuid">
+  Optional site supervisor ID allowed to confirm or dispute days.
+</ParamField>
+
+<ParamField body="auto_fund_request" type="boolean">
+  Defaults to `true`. Automatically generates `paga_account_number` and `paga_payment_url` on creation.
+</ParamField>
+
+<ParamField body="days_breakdown" type="array">
+  Optional list of `{ day_number, amount_kobo?, worker_id? }` to assign different artisans or custom pay amounts to specific days.
+</ParamField>
+
+## Request funding (`POST /jobs/{job_id}/fund-request`)
+
+Generates (or fetches) the one-time 10-digit Paga bank account number and payment link if `auto_fund_request` was `false`, moving the job to `AWAITING_FUNDING`.
+
+## Daily work actions
+
+| Method | Path | Who can call it | What happens |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/jobs` | Signed-in user | List jobs filtered by `status`, `trade`, `worker_id`, `client_id`, `supervisor_id` |
+| `GET` | `/jobs/{job_id}` | Job party | Return job details, `supervisor_token`, `paga_account_number`, and daily schedule (`days_schedule`) |
+| `POST` | `/jobs/{job_id}/days/{day_number}/done` | Worker | Marks day `DONE_REPORTED` and starts the 24-hour review timer |
+| `POST` | `/jobs/{job_id}/days/{day_number}/confirm` | Employer or Supervisor | Marks day `CONFIRMED` and queues immediate payout to the worker |
+| `POST` | `/jobs/{job_id}/days/{day_number}/dispute` | Employer or Supervisor | Marks day `DISPUTED` and pauses the 24-hour auto-release timer |
+| `GET` | `/jobs/verify/{receipt_number}` | Anyone | Verifies a completed job receipt |

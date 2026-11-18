@@ -21,9 +21,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     const sizes = {
-      sm: 'h-9 px-3.5 text-xs font-semibold rounded-[var(--pw-radius-sm)]',
-      md: 'h-11 px-4 text-sm font-semibold rounded-[var(--pw-radius-sm)]',
-      lg: 'min-h-[var(--pw-tap-preferred)] px-[22px] py-[14px] text-base font-semibold leading-none rounded-[var(--pw-radius-sm)]',
+      sm: 'h-9 px-4 text-xs font-semibold rounded-full',
+      md: 'h-11 px-5 text-sm font-semibold rounded-full',
+      lg: 'min-h-[var(--pw-tap-preferred)] px-6 py-3.5 text-base font-semibold leading-none rounded-full',
     }
 
     return (

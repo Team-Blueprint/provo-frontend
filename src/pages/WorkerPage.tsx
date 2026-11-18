@@ -1,53 +1,48 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  AlertCircle,
-  ArrowLeft,
+  ArrowUpRight,
+  Briefcase,
   Check,
+  CheckCircle,
   Copy,
-  FileText,
-  Link as LinkIcon,
-  Plus,
-  UserAdd,
 } from 'reicon-react'
 import { api } from '@/api/client'
-import type { Job, JobStatus, JobType, ReportPayload, Worker } from '@/api/types'
+import type { EscrowJob, ReportPayload, Worker } from '@/api/types'
 import { formatNaira, getTierDetails } from '@/lib/format'
-import { messages } from '@/messages/en'
+import { EmptyState } from '@/components/pw/EmptyState'
+import { JobLine } from '@/components/pw/JobLine'
+import { WorkerShell } from '@/components/pw/WorkerShell'
+import { WorkerWithdrawModal } from '@/components/pw/WorkerWithdrawModal'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { AmountText } from '@/components/pw/AmountText'
-import { JobLine } from '@/components/pw/JobLine'
-import { JobTypePicker } from '@/components/pw/JobTypePicker'
-import { OfflineBanner } from '@/components/pw/OfflineBanner'
+import { toast } from '@/components/ui/toast'
 
 export function WorkerPage() {
   const [loading, setLoading] = useState(true)
   const [worker, setWorker] = useState<Worker | null>(null)
-  const [jobs, setJobs] = useState<Job[]>([])
+  const [jobs, setJobs] = useState<EscrowJob[]>([])
   const [reportPreview, setReportPreview] = useState<ReportPayload | null>(null)
-  const [filter, setFilter] = useState<'all' | JobStatus>('all')
   const [copiedNuban, setCopiedNuban] = useState(false)
-  const [copiedLink, setCopiedLink] = useState(false)
-
-  const [linkingJob, setLinkingJob] = useState<Job | null>(null)
-  const [linkName, setLinkName] = useState('')
-  const [linkPhone, setLinkPhone] = useState('')
-
-  const [cashOpen, setCashOpen] = useState(false)
-  const [cashName, setCashName] = useState('')
-  const [cashPhone, setCashPhone] = useState('')
-  const [cashAmount, setCashAmount] = useState('')
-  const [cashType, setCashType] = useState<JobType>('Bricklaying')
+  const [markingKey, setMarkingKey] = useState<string | null>(null)
+  const [notice, setNotice] = useState('')
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
+  const [withdrawnNaira, setWithdrawnNaira] = useState(0)
 
   async function load() {
     setLoading(true)
-    const data = await api.getWorkerDashboard()
-    setWorker(data.worker)
-    setJobs(data.jobs)
-    setReportPreview(data.reportPreview)
-    setLoading(false)
+    try {
+      const data = await api.getWorkerDashboard()
+      setWorker(data.worker)
+      setJobs(data.jobs)
+      setReportPreview(data.reportPreview)
+      const saved = Number(window.localStorage.getItem(`proofwork_withdrawn_${data.worker.id}`) || '0')
+      setWithdrawnNaira(Number.isFinite(saved) ? saved : 0)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not load worker dashboard.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -57,139 +52,294 @@ export function WorkerPage() {
     return () => window.removeEventListener('proofwork:demo-updated', handler)
   }, [])
 
-  const unlinkedTransfers = jobs.filter((j) => j.needsPayerLink)
-  const filteredJobs = filter === 'all' ? jobs : jobs.filter((j) => j.status === filter)
-
-  async function handleLinkPayer(e: React.FormEvent) {
-    e.preventDefault()
-    if (!linkingJob || !linkName.trim() || !linkPhone.trim()) return
-    await api.linkPayerToClient(linkingJob.id, linkName.trim(), linkPhone.trim())
-    setLinkingJob(null)
-    setLinkName('')
-    setLinkPhone('')
-    await load()
-  }
-
-  async function handleCashSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const amt = Number(cashAmount)
-    if (!cashName.trim() || !cashPhone.trim() || !amt) return
-    await api.createCashDraft(cashName.trim(), cashPhone.trim(), amt, cashType)
-    setCashOpen(false)
-    setCashName('')
-    setCashPhone('')
-    setCashAmount('')
-    await load()
-  }
+  const activeJobs = jobs.filter((j) => j.status === 'FUNDED' || j.status === 'IN_PROGRESS')
+  const settledDays = jobs
+    .flatMap((j) => j.days)
+    .filter((d) => d.status === 'PAID' || d.status === 'CONFIRMED' || d.status === 'AUTO_RELEASED')
+  const confirmedDays = settledDays.length
+  const totalEarnedNaira = Math.round(
+    settledDays.reduce((sum, d) => sum + d.amountKobo, 0) / 100,
+  )
+  const pendingPayNaira = Math.round(
+    activeJobs
+      .flatMap((j) => j.days)
+      .filter((d) => d.status === 'PENDING' || d.status === 'DONE_REPORTED')
+      .reduce((sum, d) => sum + d.amountKobo, 0) / 100,
+  )
+  const waitingDays = jobs
+    .flatMap((j) => j.days)
+    .filter((d) => d.status === 'DONE_REPORTED').length
+  const availableBalanceNaira = Math.max(0, totalEarnedNaira - withdrawnNaira)
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
-      <OfflineBanner />
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3.5">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            <span>Proofwork</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link to="/worker/consent">
-              <Button size="sm" variant="secondary">
-                <FileText className="h-4 w-4" aria-hidden="true" />
-                <span>Share report</span>
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-4 py-6 space-y-6">
-        {loading || !worker ? (
-          <div className="space-y-4">
-            <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-40 w-full" />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-semibold text-foreground">{worker.name}</h1>
-                <p className="text-sm text-muted-foreground">
-                  {worker.trade} · {worker.phone}
-                </p>
-              </div>
-              {reportPreview && (
-                <Link
-                  to={`/report/${reportPreview.reportToken}`}
-                  className="rounded-[var(--pw-radius-md)] border border-border bg-card px-3.5 py-2.5 text-right hover:bg-muted transition-colors"
-                >
-                  <span className="block text-xs font-medium text-primary">
-                    {getTierDetails(reportPreview.score).tier} tier
-                  </span>
-                  <span className="text-lg font-semibold tabular-nums text-foreground">
-                    {reportPreview.score}/100
-                  </span>
-                </Link>
-              )}
+    <WorkerShell jobCount={jobs.length}>
+      {loading || !worker ? (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-36" />
+              <Skeleton className="h-4 w-72 max-w-full" />
             </div>
+            <div className="flex gap-2.5">
+              <Skeleton className="h-10 w-32 rounded-full" />
+              <Skeleton className="h-10 w-36 rounded-full" />
+            </div>
+          </div>
 
-            {reportPreview && (
-              <Card className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-secondary/40">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium text-foreground">
-                    Standing: {getTierDetails(reportPreview.score).tier} ({reportPreview.score}/100)
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {getTierDetails(reportPreview.score).nextStep}
-                  </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Card key={i} className="p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-7 w-7 rounded-full" />
                 </div>
-                <Link to={`/report/${reportPreview.reportToken}`} className="shrink-0">
-                  <Button size="sm" variant="secondary">View lender report</Button>
-                </Link>
-              </Card>
-            )}
-
-            {unlinkedTransfers.map((job) => (
-              <Card
-                key={job.id}
-                className="border-[var(--pw-warning)]/40 bg-[var(--pw-warning-tint)] p-4 space-y-3"
-              >
-                <div className="flex items-start gap-2.5">
-                  <AlertCircle
-                    weight="Filled"
-                    className="h-5 w-5 shrink-0 text-[var(--pw-warning)] mt-0.5"
-                    aria-hidden="true"
-                  />
-                  <div className="space-y-1 flex-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {messages.worker.unknownTransfer}
-                    </p>
-                    <p className="text-sm text-foreground">
-                      <AmountText amount={job.amount} /> from{' '}
-                      <span className="font-mono font-medium">{job.payerRawName}</span> (
-                      {job.payerBankName})
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  size="md"
-                  className="w-full sm:w-auto"
-                  onClick={() => setLinkingJob(job)}
-                >
-                  <UserAdd className="h-4 w-4" aria-hidden="true" />
-                  <span>Link client &amp; send confirmation</span>
-                </Button>
+                <Skeleton className="h-10 w-16" />
+                <Skeleton className="h-3 w-32" />
               </Card>
             ))}
+          </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Card className="p-4 space-y-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Dedicated Paga account
-                </span>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-xl font-semibold tracking-wide text-foreground">
-                    {worker.pagaAccountNumber}
+          <Card className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-3.5 w-64 max-w-full" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-14" />
+              <Skeleton className="h-10 w-44 rounded-full" />
+            </div>
+          </Card>
+
+          <div className="grid gap-4 lg:grid-cols-12">
+            <Card className="lg:col-span-5 p-5 space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-3.5 w-32" />
+                </div>
+                <Skeleton className="h-8 w-24 rounded-full" />
+              </div>
+              <Skeleton className="h-14 w-full rounded-[10px]" />
+              <div className="flex justify-between pt-2 border-t border-border">
+                <Skeleton className="h-3.5 w-28" />
+                <Skeleton className="h-3.5 w-20" />
+              </div>
+            </Card>
+            <Card className="lg:col-span-7 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-5 w-28" />
+                <Skeleton className="h-3.5 w-16" />
+              </div>
+              <div className="space-y-2.5">
+                <Skeleton className="h-16 w-full rounded-[12px]" />
+                <Skeleton className="h-16 w-full rounded-[12px]" />
+                <Skeleton className="h-16 w-full rounded-[12px]" />
+              </div>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">Overview</h1>
+              <p className="text-sm text-muted-foreground">
+                Mark work days done to release your pay and build your record.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              <Link to="/ussd">
+                <Button size="md" variant="secondary">
+                  <span>USSD simulator</span>
+                </Button>
+              </Link>
+              <Link to="/worker/share-link">
+                <Button size="md">
+                  <span>Share your link</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {reportPreview && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-[var(--pw-radius-lg)] bg-primary text-primary-foreground p-5 flex flex-col justify-between gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium opacity-90">Provo Score</span>
+                  <Link
+                    to="/worker/consent"
+                    aria-label="Share report"
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-foreground text-primary"
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+                <p className="text-4xl font-bold tabular-nums">{reportPreview.score}</p>
+                <p className="text-xs opacity-85">
+                  {getTierDetails(reportPreview.score).tier} tier · /100
+                </p>
+              </div>
+
+              <Card className="p-5 flex flex-col justify-between gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground">Total Earned</span>
+                  <Link
+                    to="/worker/jobs"
+                    aria-label="View earned jobs"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+                <p className="text-3xl font-bold tabular-nums text-foreground">
+                  {formatNaira(totalEarnedNaira)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {confirmedDays} paid {confirmedDays === 1 ? 'day' : 'days'}
+                </p>
+              </Card>
+
+              <Card className="p-5 flex flex-col justify-between gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground">Pending Pay</span>
+                  <Link
+                    to="/worker/jobs"
+                    aria-label="View pending pay"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+                <p className="text-3xl font-bold tabular-nums text-foreground">
+                  {formatNaira(pendingPayNaira)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {waitingDays} {waitingDays === 1 ? 'day' : 'days'} in 24h window
+                </p>
+              </Card>
+
+              <Card className="p-5 flex flex-col justify-between gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground">Paid days</span>
+                  <Link
+                    to="/worker/jobs"
+                    aria-label="View jobs"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+                <p className="text-4xl font-bold tabular-nums text-foreground">{confirmedDays}</p>
+                <p className="text-xs text-muted-foreground">Paid out to Paga</p>
+              </Card>
+            </div>
+          )}
+
+          {notice && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex items-center gap-2 rounded-[var(--pw-radius-md)] border border-[var(--pw-positive)]/30 bg-[var(--pw-positive-tint)] px-4 py-2.5 text-xs font-medium text-[var(--pw-positive)]"
+            >
+              <CheckCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{notice}</span>
+            </div>
+          )}
+
+          {activeJobs.length === 0 ? (
+            <EmptyState
+              icon={Briefcase}
+              compact
+              title="No active funded jobs"
+              description={`When an employer locks job pay for ${worker.name}, your daily schedule appears here so you can mark each day done.`}
+              action={
+                <Link to="/worker/share-link">
+                  <Button size="sm" variant="secondary">
+                    Share your work link →
+                  </Button>
+                </Link>
+              }
+            />
+          ) : (
+            activeJobs.map((job) => {
+              const nextPending = job.days.find((d) => d.status === 'PENDING')
+              const awaitingDay = job.days.find((d) => d.status === 'DONE_REPORTED')
+              const paidCount = job.days.filter(
+                (d) => d.status === 'PAID' || d.status === 'CONFIRMED',
+              ).length
+              const actionKey = nextPending ? `${job.id}-${nextPending.dayNumber}` : null
+              const statusSummary = [
+                nextPending
+                  ? `Day ${nextPending.dayNumber} of ${job.daysCount}`
+                  : `${job.daysCount} of ${job.daysCount} days reported`,
+                `${paidCount} paid`,
+                awaitingDay ? `Day ${awaitingDay.dayNumber} in 24h window` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')
+
+              return (
+                <Card
+                  key={job.id}
+                  className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-primary/30"
+                >
+                  <div className="space-y-1">
+                    <h2 className="text-base font-semibold text-foreground">
+                      {job.clientName} · {job.trade}
+                    </h2>
+                    <p className="text-xs text-muted-foreground tabular-nums">{statusSummary}</p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                      to="/worker/jobs"
+                      className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Details →
+                    </Link>
+
+                    {nextPending && (
+                      <Button
+                        size="md"
+                        disabled={markingKey === actionKey}
+                        onClick={async () => {
+                          if (!actionKey) return
+                          setMarkingKey(actionKey)
+                          try {
+                            await api.markDayDone(job.id, nextPending.dayNumber)
+                            const msg = `Day ${nextPending.dayNumber} for ${job.clientName} marked Done. 24h confirmation window started.`
+                            setNotice(msg)
+                            toast.success(msg, `Day ${nextPending.dayNumber} reported`)
+                            await load()
+                          } catch (err) {
+                            toast.error(
+                              err instanceof Error ? err.message : 'Could not mark day as done.',
+                            )
+                          } finally {
+                            setMarkingKey(null)
+                          }
+                        }}
+                      >
+                        <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                        <span>
+                          {markingKey === actionKey
+                            ? 'Updating...'
+                            : `Mark Day ${nextPending.dayNumber} done · ₦${Math.round(nextPending.amountKobo / 100).toLocaleString()}`}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              )
+            })
+          )}
+
+          <div className="grid gap-4 lg:grid-cols-12">
+            <Card className="lg:col-span-5 p-5 flex flex-col justify-between gap-5">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] text-primary">
+                    Payout Paga Account
                   </span>
                   <Button
                     size="sm"
@@ -200,208 +350,78 @@ export function WorkerPage() {
                       setTimeout(() => setCopiedNuban(false), 1500)
                     }}
                   >
-                    {copiedNuban ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedNuban ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                     <span>{copiedNuban ? 'Copied' : 'Copy'}</span>
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Sweeps automatically to {worker.bankName} ({worker.bankAccountNumber})
-                </p>
-              </Card>
-
-              <Card className="p-4 space-y-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Client payment link
-                </span>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-sm truncate text-foreground">
-                    {worker.paymentLink}
-                  </span>
-                  <div className="flex gap-1.5 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(window.location.origin + worker.paymentLink)
-                        setCopiedLink(true)
-                        setTimeout(() => setCopiedLink(false), 1500)
-                      }}
-                    >
-                      {copiedLink ? <Check className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
-                    </Button>
-                    <Link to={worker.paymentLink}>
-                      <Button size="sm">Open</Button>
-                    </Link>
+                <div className="flex items-baseline justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Available to withdraw</p>
+                    <p className="text-2xl font-bold tabular-nums text-foreground">
+                      {formatNaira(availableBalanceNaira)}
+                    </p>
                   </div>
+                  <Button
+                    size="md"
+                    disabled={availableBalanceNaira <= 0}
+                    onClick={() => setWithdrawOpen(true)}
+                  >
+                    Withdraw
+                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Grade 1 evidence when client pays through this link.
+                <p className="font-mono text-xl sm:text-2xl font-semibold tracking-wider text-foreground">
+                  {worker.pagaAccountNumber.replace(/(\d{4})(\d{4})(\d{2})/, '$1 $2 $3')}
                 </p>
-              </Card>
-            </div>
+                <p className="text-xs text-muted-foreground">
+                  Confirmed days pay out here and settle to {worker.bankName} (
+                  {worker.bankAccountNumber}). Telegram: {worker.telegramHandle}
+                </p>
+              </div>
+              <Link to="/worker/jobs" className="text-xs font-medium text-primary hover:underline">
+                View day-by-day schedule →
+              </Link>
+            </Card>
 
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-medium text-foreground">Job record</h2>
-              <Button size="sm" variant="secondary" onClick={() => setCashOpen((v) => !v)}>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                <span>Log cash job</span>
-              </Button>
-            </div>
-
-            {cashOpen && (
-              <Card className="p-4 space-y-4">
-                <div className="space-y-1">
-                  <h3 className="text-base font-medium text-foreground">Log a cash job (Grade 3)</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {messages.worker.cashDraftLine}
-                  </p>
-                </div>
-                <form onSubmit={handleCashSubmit} className="space-y-3">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <label htmlFor="cash-name" className="text-sm font-medium">Client name</label>
-                      <Input
-                        id="cash-name"
-                        required
-                        value={cashName}
-                        onChange={(e) => setCashName(e.target.value)}
-                        placeholder="e.g. Mr. Akpan"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label htmlFor="cash-phone" className="text-sm font-medium">Client phone</label>
-                      <Input
-                        id="cash-phone"
-                        type="tel"
-                        required
-                        value={cashPhone}
-                        onChange={(e) => setCashPhone(e.target.value)}
-                        placeholder="0803 000 0000"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="cash-amount" className="text-sm font-medium">Amount (₦)</label>
-                    <Input
-                      id="cash-amount"
-                      type="number"
-                      inputMode="numeric"
-                      required
-                      min={500}
-                      value={cashAmount}
-                      onChange={(e) => setCashAmount(e.target.value)}
-                      placeholder="8000"
-                    />
-                  </div>
-                  <JobTypePicker value={cashType} onChange={setCashType} />
-                  <div className="flex gap-2">
-                    <Button type="button" variant="secondary" onClick={() => setCashOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit">Save draft &amp; send confirmation</Button>
-                  </div>
-                </form>
-              </Card>
-            )}
-
-            <div className="flex flex-wrap gap-1.5">
-              {(['all', 'confirmed', 'waiting', 'draft', 'disputed'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setFilter(tab)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium capitalize cursor-pointer border ${
-                    filter === tab
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-card text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            {filteredJobs.length === 0 ? (
-              <Card className="p-8 text-center space-y-2">
-                <p className="text-sm text-muted-foreground">{messages.worker.emptyJobs}</p>
-              </Card>
-            ) : (
+            <Card className="lg:col-span-7 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-foreground">Recent jobs</h2>
+                <Link to="/worker/jobs" className="text-xs font-medium text-primary hover:underline">
+                  View all →
+                </Link>
+              </div>
               <div className="space-y-2.5">
-                {filteredJobs.map((job) => (
-                  <div key={job.id} className="space-y-1">
-                    <JobLine job={job} mode="worker" />
-                    {job.confirmToken && (job.status === 'waiting' || job.status === 'draft') && (
-                      <div className="flex justify-end px-1">
-                        <Link
-                          to={`/confirm/${job.confirmToken}`}
-                          className="text-xs font-medium text-primary hover:underline"
-                        >
-                          Open client confirmation screen →
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                {jobs.length === 0 ? (
+                  <EmptyState
+                    icon={Briefcase}
+                    compact
+                    title="No job history yet"
+                    description="Completed and funded jobs will appear here once an employer creates one."
+                  />
+                ) : (
+                  jobs.slice(0, 3).map((job) => (
+                    <JobLine key={job.id} job={job} mode="worker" />
+                  ))
+                )}
               </div>
-            )}
-          </>
-        )}
-      </main>
-
-      {linkingJob && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/40 p-4"
-        >
-          <Card className="w-full max-w-md p-5 space-y-4 shadow-[var(--pw-shadow-sheet)]">
-            <div className="space-y-1">
-              <h2 className="text-lg font-medium text-foreground">Who paid you?</h2>
-              <p className="text-sm text-muted-foreground">
-                {formatNaira(linkingJob.amount)} from{' '}
-                <span className="font-mono text-foreground">{linkingJob.payerRawName}</span> (
-                {linkingJob.payerBankName})
-              </p>
-            </div>
-            <form onSubmit={handleLinkPayer} className="space-y-3">
-              <div className="space-y-1">
-                <label htmlFor="link-name" className="text-sm font-medium">Client name</label>
-                <Input
-                  id="link-name"
-                  required
-                  value={linkName}
-                  onChange={(e) => setLinkName(e.target.value)}
-                  placeholder="e.g. Mr. Chinedu Okoye"
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="link-phone" className="text-sm font-medium">Client phone</label>
-                <Input
-                  id="link-phone"
-                  type="tel"
-                  required
-                  value={linkPhone}
-                  onChange={(e) => setLinkPhone(e.target.value)}
-                  placeholder="0803 123 4567"
-                />
-              </div>
-              <div className="flex gap-2 pt-1">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={() => setLinkingJob(null)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1">
-                  Send confirmation
-                </Button>
-              </div>
-            </form>
-          </Card>
-        </div>
+            </Card>
+          </div>
+          <WorkerWithdrawModal
+            open={withdrawOpen}
+            onClose={() => setWithdrawOpen(false)}
+            worker={worker}
+            availableBalanceNaira={availableBalanceNaira}
+            onSuccess={(amountNaira, destination) => {
+              const nextWithdrawn = withdrawnNaira + amountNaira
+              setWithdrawnNaira(nextWithdrawn)
+              window.localStorage.setItem(
+                `proofwork_withdrawn_${worker.id}`,
+                String(nextWithdrawn),
+              )
+              setNotice(`Withdrawal of ${formatNaira(amountNaira)} queued to ${destination}.`)
+            }}
+          />
+        </>
       )}
-    </div>
+    </WorkerShell>
   )
 }

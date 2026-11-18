@@ -1,0 +1,40 @@
+---
+title: "Sign up & payouts"
+description: "How artisans onboard via Telegram, Web, or USSD and link a Paga payout account."
+---
+
+Artisans can join Provo through three entry points, all backed by the same identity record and phone number.
+
+<Tabs>
+  <Tab title="Telegram Bot">
+    1. Open an employer's SMS invite link (`t.me/...`) or search for the Provo bot.
+    2. Tap **Share Contact** so Telegram provides your verified Nigerian phone number (`+234`).
+    3. Pick your primary trade from the fixed list (`BRICKLAYING`, `PAINTING`, `PLUMBING`, `CARPENTRY`, `ELECTRICAL`, `WELDING`, `TAILORING`, `MECHANIC`) and enter your Paga account number.
+  </Tab>
+  <Tab title="Web Workspace">
+    1. Visit `/sign-in?role=worker` and switch to **Create account**.
+    2. Enter your full name, Nigerian phone number, primary trade, and a 6-digit numeric PIN (`POST /auth/signup`).
+    3. Verify with the 6-digit SMS one-time passcode (`POST /auth/verify-otp`). Returning workers sign in directly with phone + 6-digit PIN (`POST /auth/login`).
+  </Tab>
+  <Tab title="USSD (*123#)">
+    1. Dial `*123#` in the USSD simulator (`/ussd`).
+    2. Check your balance (`GET /ussd/balance`), view pending jobs (`GET /ussd/pending-jobs`), report today's work done (`POST /ussd/report-done`), or withdraw to your Paga payout account (`POST /ussd/withdraw`).
+  </Tab>
+</Tabs>
+
+## Paga payout account & shareable payment link
+
+Workers manage their Paga payout account number, alert channel preference, and availability in [Worker Settings](/worker/settings) (`GET` / `PATCH /workers/{id}/settings`), and can copy their persistent payment link from `GET /workers/{id}/payment-link` to send directly to employers.
+
+## Public artisan directory
+
+Available workers appear in `GET /workers/available` with only their name, trade, area, verified paid day count, and badge tier:
+
+| Verified paid days | Directory badge |
+| :--- | :--- |
+| `0` days | `UNVERIFIED` |
+| `1–9` days | `BRONZE_VERIFIED` |
+| `10–29` days | `SILVER_VERIFIED` |
+| `30+` days | `GOLD_VERIFIED` |
+
+Personal phone numbers and payout accounts are never exposed in the public directory.

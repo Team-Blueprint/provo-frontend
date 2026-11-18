@@ -1,0 +1,29 @@
+---
+title: "Telegram & Web"
+description: "Primary interactive channels for workers, employers, and supervisors."
+---
+
+Provo runs the same domain state machines across both the **Telegram Bot** (`aiogram 3` in webhook mode) and the **Web Workspaces** (React + TypeScript).
+
+## Telegram Bot (`POST /webhooks/telegram`)
+
+Telegram is the primary daily channel for artisans and site supervisors because it runs smoothly on low-end Android devices and consumes minimal data.
+
+- **Verified phone onboarding:** Workers share their phone number via Telegram's native `request_contact` button, giving Provo a Telegram-verified `+234` number without typing passwords.
+- **Role-specific menus:**
+  - **Workers:** Available jobs, active locked jobs, and one-tap **Done today** reporting.
+  - **Employers:** New job creation, funding instructions, sandbox deposit simulation, and inline **Confirm** / **Dispute** buttons.
+  - **Supervisors:** Daily confirmation queue for assigned jobs.
+- **Opaque callback IDs:** Inline confirmation and dispute buttons carry opaque identifiers. The backend verifies that the Telegram user pressing the button matches the job's `client_id` or `supervisor_id` and that the day is in `DONE_REPORTED`.
+
+## Web Workspaces
+
+| Route | Surface | Target device |
+| :--- | :--- | :--- |
+| `/sign-in` | Role-aware phone + 6-digit PIN login & OTP signup | Mobile & Desktop |
+| `/worker` | Worker Home, job ledger, daily check-in, consent, settings | Mobile-first (360px+) |
+| `/employer` | Employer Workspace, job creation, pending confirmations | Mobile & Desktop |
+| `/checkout/:jobId` | One-time 10-digit Paga NUBAN & payment link checkout | Mobile & Desktop |
+| `/supervisor` | Foreman daily sign-off queue | Mobile & Desktop |
+| `/report/:token` | Print-ready Lender Profile Report | Desktop & Laptop |
+| `/admin` | Disputes, circular-flow flags, outbox logs | Desktop |

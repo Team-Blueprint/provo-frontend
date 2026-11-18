@@ -1,0 +1,60 @@
+---
+title: "PIN setup, refresh & profile"
+description: "Set a web PIN for Telegram-registered users, refresh JWT tokens, and fetch your profile."
+api: "GET /auth/me"
+---
+
+## Get current user (`GET /auth/me`)
+
+Requires `Authorization: Bearer <access_token>`.
+
+<CodeGroup>
+```bash curl
+curl https://api.useproofwork.ng/auth/me \
+  -H "Authorization: Bearer <access_token>"
+```
+
+```json 200 OK
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Emem Bassey",
+  "phone": "+2348123456780",
+  "is_worker": true,
+  "is_client": false,
+  "is_supervisor": false,
+  "payout_account_number": "1092837465",
+  "payout_bank_code": "PAGA",
+  "needs_pin_setup": false
+}
+```
+</CodeGroup>
+
+## Set web PIN for Telegram accounts
+
+If `needs_pin_setup` is `true`, request an SMS code and save a 6-digit PIN:
+
+<CodeGroup>
+```bash 1. Request PIN setup OTP
+curl -X POST https://api.useproofwork.ng/auth/request-set-pin \
+  -H "Content-Type: application/json" \
+  -d '{ "phone": "+2348123456780" }'
+```
+
+```bash 2. Set 6-digit PIN
+curl -X POST https://api.useproofwork.ng/auth/set-pin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+2348123456780",
+    "otp_code": "482910",
+    "new_pin": "654321"
+  }'
+```
+</CodeGroup>
+
+## Refresh access token (`POST /auth/refresh`)
+
+```bash curl
+curl -X POST https://api.useproofwork.ng/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{ "refresh_token": "<refresh_token>" }'
+```

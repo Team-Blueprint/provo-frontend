@@ -10,7 +10,7 @@ interface DisputeDialogProps {
 }
 
 export function DisputeDialog({ open, onClose, onSubmit }: DisputeDialogProps) {
-  const [reason, setReason] = useState<DisputeReason>('Not for work')
+  const [reason, setReason] = useState<DisputeReason>(DISPUTE_REASONS[0])
   const [submitting, setSubmitting] = useState(false)
 
   if (!open) return null
@@ -35,10 +35,10 @@ export function DisputeDialog({ open, onClose, onSubmit }: DisputeDialogProps) {
       <Card className="w-full max-w-md p-5 space-y-4 shadow-[var(--pw-shadow-sheet)]">
         <div className="space-y-1">
           <h2 id="dispute-title" className="text-lg font-medium text-foreground">
-            Report an issue with this payment
+            Dispute this day’s work
           </h2>
           <p className="text-sm text-muted-foreground">
-            Disputed records are removed from the worker’s score while reviewed.
+            Disputed days are held safely and excluded from the worker’s score while reviewed.
           </p>
         </div>
 

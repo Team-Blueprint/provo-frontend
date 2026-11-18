@@ -1,0 +1,30 @@
+---
+title: "Money ledger & guaranteed payouts"
+description: "How Provo tracks every kobo and makes sure confirmed days never lose a payout."
+---
+
+Provo stores every amount in whole kobo and records every movement in a permanent ledger (`FUNDED`, `PARTIAL_FUNDED`, `EXCESS_HELD`, `RELEASED`, `REFUNDED`).
+
+## The balance rule
+
+For every job at any moment:
+
+```text
+Money paid out + Money refunded <= Money received
+```
+
+When a job is completely finished (`COMPLETED` or `CANCELLED` with all refunds settled):
+
+```text
+Money paid out + Money refunded == Money received
+```
+
+## Guaranteed payout queue (no lost payments)
+
+When an employer or supervisor confirms a day, or when the 24-hour timer auto-releases a day, three things happen together inside **one database transaction**:
+
+1. The day's status changes to `CONFIRMED` or `AUTO_RELEASED`.
+2. A `RELEASED` entry is written to the ledger.
+3. A `PENDING` payout row is added to the payout queue with a unique reference key.
+
+Because all three save together, a server crash can never confirm a day without queuing its payout. A background worker sends each queued payout to Paga using its unique reference key (so retries never pay twice) and marks the day `PAID` only after Paga confirms the transfer.
