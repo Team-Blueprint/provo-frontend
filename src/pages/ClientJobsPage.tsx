@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AngleDown, Check, CheckCircle, Copy, Lock, Plus, Receipt, ShieldCheck } from 'reicon-react'
 import { api } from '@/api/client'
-import type { DisputeReason, EscrowJob, JobStatus, Worker } from '@/api/types'
+import { availableWorkersQueryOptions, clientJobsQueryOptions } from '@/api/queries'
+import type { DisputeReason, EscrowJob, JobStatus } from '@/api/types'
 import {
   buildDayReceipt,
   buildEscrowLockReceipt,
@@ -25,8 +27,9 @@ import { Card } from '@/components/ui/card'
 const PAGE_SIZE = 3
 
 export function ClientJobsPage() {
-  const [jobs, setJobs] = useState<EscrowJob[]>([])
-  const [workers, setWorkers] = useState<Worker[]>([])
+  const queryClient = useQueryClient()
+  const { data: jobs = [] } = useQuery(clientJobsQueryOptions())
+  const { data: workers = [] } = useQuery(availableWorkersQueryOptions())
   const [viewMode, setViewMode] = useState<'jobs' | 'history'>('jobs')
   const [filter, setFilter] = useState<'all' | JobStatus>('all')
   const [search, setSearch] = useState('')
@@ -43,17 +46,11 @@ export function ClientJobsPage() {
   const [activeReceipt, setActiveReceipt] = useState<TransactionReceipt | null>(null)
 
   async function load() {
-    const [clientJobs, dir] = await Promise.all([api.getClientJobs(), api.getAvailableWorkers()])
-    setJobs(clientJobs)
-    setWorkers(dir)
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['employer', 'jobs'] }),
+      queryClient.invalidateQueries({ queryKey: ['workers', 'available'] }),
+    ])
   }
-
-  useEffect(() => {
-    load()
-    const handler = () => load()
-    window.addEventListener('proofwork:demo-updated', handler)
-    return () => window.removeEventListener('proofwork:demo-updated', handler)
-  }, [])
 
   useEffect(() => {
     setPage(1)

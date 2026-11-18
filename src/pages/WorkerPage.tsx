@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   ArrowUpRight,
@@ -8,7 +9,7 @@ import {
   Copy,
 } from 'reicon-react'
 import { api } from '@/api/client'
-import type { EscrowJob, ReportPayload, Worker } from '@/api/types'
+import { workerDashboardQueryOptions } from '@/api/queries'
 import { formatNaira, getTierDetails } from '@/lib/format'
 import { EmptyState } from '@/components/pw/EmptyState'
 import { JobLine } from '@/components/pw/JobLine'
@@ -19,38 +20,33 @@ import { Card, Skeleton } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
 
 export function WorkerPage() {
-  const [loading, setLoading] = useState(true)
-  const [worker, setWorker] = useState<Worker | null>(null)
-  const [jobs, setJobs] = useState<EscrowJob[]>([])
-  const [reportPreview, setReportPreview] = useState<ReportPayload | null>(null)
+  const queryClient = useQueryClient()
+  const { data, isPending, error } = useQuery(workerDashboardQueryOptions())
+  const worker = data?.worker ?? null
+  const jobs = data?.jobs ?? []
+  const reportPreview = data?.reportPreview ?? null
+  const loading = isPending
   const [copiedNuban, setCopiedNuban] = useState(false)
   const [markingKey, setMarkingKey] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [withdrawnNaira, setWithdrawnNaira] = useState(0)
 
-  async function load() {
-    setLoading(true)
-    try {
-      const data = await api.getWorkerDashboard()
-      setWorker(data.worker)
-      setJobs(data.jobs)
-      setReportPreview(data.reportPreview)
-      const saved = Number(window.localStorage.getItem(`proofwork_withdrawn_${data.worker.id}`) || '0')
-      setWithdrawnNaira(Number.isFinite(saved) ? saved : 0)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not load worker dashboard.')
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not load worker dashboard.')
     }
-  }
+  }, [error])
 
   useEffect(() => {
-    load()
-    const handler = () => load()
-    window.addEventListener('proofwork:demo-updated', handler)
-    return () => window.removeEventListener('proofwork:demo-updated', handler)
-  }, [])
+    if (!worker?.id) return
+    const saved = Number(window.localStorage.getItem(`proofwork_withdrawn_${worker.id}`) || '0')
+    setWithdrawnNaira(Number.isFinite(saved) ? saved : 0)
+  }, [worker?.id])
+
+  async function load() {
+    await queryClient.invalidateQueries({ queryKey: ['worker', 'dashboard'] })
+  }
 
   const activeJobs = jobs.filter((j) => j.status === 'FUNDED' || j.status === 'IN_PROGRESS')
   const settledDays = jobs

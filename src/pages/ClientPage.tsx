@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowRight,
@@ -7,7 +8,8 @@ import {
   Plus,
 } from 'reicon-react'
 import { api } from '@/api/client'
-import type { DisputeReason, EscrowJob, TradeType, Worker } from '@/api/types'
+import { availableWorkersQueryOptions, clientJobsQueryOptions } from '@/api/queries'
+import type { DisputeReason, EscrowJob, TradeType } from '@/api/types'
 import { formatNaira } from '@/lib/format'
 import { AmountText } from '@/components/pw/AmountText'
 import { DisputeDialog } from '@/components/pw/DisputeDialog'
@@ -31,9 +33,9 @@ export function ClientPage() {
   const invitedDays = searchParams.get('days')
   const invitedDesc = searchParams.get('desc')
 
-  const [loading, setLoading] = useState(true)
-  const [jobs, setJobs] = useState<EscrowJob[]>([])
-  const [workers, setWorkers] = useState<Worker[]>([])
+  const queryClient = useQueryClient()
+  const { data: jobs = [], isPending: loading, error: jobsError } = useQuery(clientJobsQueryOptions())
+  const { data: workers = [] } = useQuery(availableWorkersQueryOptions())
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [checkoutJob, setCheckoutJob] = useState<EscrowJob | null>(null)
@@ -59,35 +61,35 @@ export function ClientPage() {
     null,
   )
 
-  async function load() {
-    try {
-      const [clientJobs, dir] = await Promise.all([api.getClientJobs(), api.getAvailableWorkers()])
-      setJobs(clientJobs)
-      setWorkers(dir)
-      if (invitedWorkerId) {
-        const matched = dir.find((w) => w.id === invitedWorkerId)
-        if (matched) {
-          setWorkerId(matched.id)
-          setTrade(matched.trade)
-        }
-      }
-      if (checkoutJob) {
-        const updated = clientJobs.find((j) => j.id === checkoutJob.id)
-        if (updated) setCheckoutJob(updated)
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not load employer dashboard.')
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (jobsError) {
+      toast.error(jobsError instanceof Error ? jobsError.message : 'Could not load employer dashboard.')
     }
-  }
+  }, [jobsError])
 
   useEffect(() => {
-    load()
-    const handler = () => load()
-    window.addEventListener('proofwork:demo-updated', handler)
-    return () => window.removeEventListener('proofwork:demo-updated', handler)
-  }, [])
+    if (invitedWorkerId) {
+      const matched = workers.find((w) => w.id === invitedWorkerId)
+      if (matched) {
+        setWorkerId(matched.id)
+        setTrade(matched.trade)
+      }
+    }
+  }, [invitedWorkerId, workers])
+
+  useEffect(() => {
+    if (checkoutJob) {
+      const updated = jobs.find((j) => j.id === checkoutJob.id)
+      if (updated) setCheckoutJob(updated)
+    }
+  }, [jobs, checkoutJob])
+
+  async function load() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['employer', 'jobs'] }),
+      queryClient.invalidateQueries({ queryKey: ['workers', 'available'] }),
+    ])
+  }
 
   function handlePhoneChange(raw: string) {
     setClientPhone(raw.replace(/\D/g, '').replace(/^0+/, '').slice(0, 10))

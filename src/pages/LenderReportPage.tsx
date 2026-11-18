@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import {
   Briefcase,
@@ -7,8 +8,8 @@ import {
   ShieldCheck,
   Warning,
 } from 'reicon-react'
-import { api } from '@/api/client'
-import type { ConfirmationOutcome, ReportPayload } from '@/api/types'
+import { lenderReportQueryOptions } from '@/api/queries'
+import type { ConfirmationOutcome } from '@/api/types'
 import { downloadJobHistoryImage } from '@/lib/downloadJobHistory'
 import { formatMaskedEmployer, formatNaira, formatShortDate, getTierDetails } from '@/lib/format'
 import { Button } from '@/components/ui/button'
@@ -27,20 +28,8 @@ const OUTCOME_FILTERS: Array<{ key: 'all' | ConfirmationOutcome; label: string }
 
 export function LenderReportPage() {
   const { reportToken = 'rep_emem_lapo_2026' } = useParams()
-  const [report, setReport] = useState<ReportPayload | null>(null)
+  const { data: report = null } = useQuery(lenderReportQueryOptions(reportToken))
   const [outcomeFilter, setOutcomeFilter] = useState<'all' | ConfirmationOutcome>('all')
-
-  async function load() {
-    const data = await api.getReport(reportToken)
-    setReport(data)
-  }
-
-  useEffect(() => {
-    load()
-    const handler = () => load()
-    window.addEventListener('proofwork:demo-updated', handler)
-    return () => window.removeEventListener('proofwork:demo-updated', handler)
-  }, [reportToken])
 
   useEffect(() => {
     if (!report) return

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '@/api/client'
-import type { Worker } from '@/api/types'
+import { workerDashboardQueryOptions, workerSettingsQueryOptions } from '@/api/queries'
 import { WorkerShell } from '@/components/pw/WorkerShell'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
@@ -10,27 +11,23 @@ import { Select } from '@/components/ui/select'
 type SettingsTab = 'account' | 'preferences'
 
 export function WorkerSettingsPage() {
+  const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const rawTab = searchParams.get('tab')
   const activeTab: SettingsTab = rawTab === 'preferences' ? 'preferences' : 'account'
 
-  const [worker, setWorker] = useState<Worker | null>(null)
+  const { data: dashboard } = useQuery(workerDashboardQueryOptions())
+  const { data: settingsData } = useQuery(workerSettingsQueryOptions())
+  const worker = dashboard?.worker ?? null
   const [channel, setChannel] = useState<'telegram' | 'sms'>('telegram')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    const sync = () => {
-      api.getWorkerDashboard().then((d) => setWorker(d.worker)).catch(() => {})
+    if (settingsData?.alertChannel) {
+      setChannel(settingsData.alertChannel === 'sms' ? 'sms' : 'telegram')
     }
-    sync()
-    api
-      .getWorkerSettings()
-      .then((res) => setChannel(res.alertChannel === 'sms' ? 'sms' : 'telegram'))
-      .catch(() => {})
-    window.addEventListener('proofwork:demo-updated', sync)
-    return () => window.removeEventListener('proofwork:demo-updated', sync)
-  }, [])
+  }, [settingsData])
 
   function setTab(next: SettingsTab) {
     setSearchParams({ tab: next })
@@ -40,6 +37,7 @@ export function WorkerSettingsPage() {
     setSaving(true)
     try {
       await api.updateWorkerSettings(channel)
+      await queryClient.invalidateQueries({ queryKey: ['worker', 'settings'] })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } finally {

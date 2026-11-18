@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AngleDown, Briefcase, CheckCircle, Receipt } from 'reicon-react'
 import { api } from '@/api/client'
+import { workerDashboardQueryOptions } from '@/api/queries'
 import type { EscrowJob, JobStatus } from '@/api/types'
 import {
   buildDayReceipt,
@@ -24,9 +26,11 @@ import { toast } from '@/components/ui/toast'
 const PAGE_SIZE = 3
 
 export function WorkerJobsPage() {
-  const [loading, setLoading] = useState(true)
-  const [workerId, setWorkerId] = useState<string | undefined>(undefined)
-  const [jobs, setJobs] = useState<EscrowJob[]>([])
+  const queryClient = useQueryClient()
+  const { data, isPending, error } = useQuery(workerDashboardQueryOptions())
+  const loading = isPending
+  const workerId = data?.worker.id
+  const jobs = data?.jobs ?? []
   const [viewMode, setViewMode] = useState<'jobs' | 'history'>('jobs')
   const [filter, setFilter] = useState<'all' | JobStatus>('all')
   const [search, setSearch] = useState('')
@@ -35,25 +39,15 @@ export function WorkerJobsPage() {
   const [page, setPage] = useState(1)
   const [activeReceipt, setActiveReceipt] = useState<TransactionReceipt | null>(null)
 
-  async function load() {
-    setLoading(true)
-    try {
-      const data = await api.getWorkerDashboard()
-      setWorkerId(data.worker.id)
-      setJobs(data.jobs)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not load job records.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    load()
-    const handler = () => load()
-    window.addEventListener('proofwork:demo-updated', handler)
-    return () => window.removeEventListener('proofwork:demo-updated', handler)
-  }, [])
+    if (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not load job records.')
+    }
+  }, [error])
+
+  async function load() {
+    await queryClient.invalidateQueries({ queryKey: ['worker', 'dashboard'] })
+  }
 
   const filtered = jobs
     .filter((j) => (filter === 'all' ? true : j.status === filter))
