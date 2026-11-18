@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
-import { AngleDown, Check, CheckCircle, Copy, Lock, Plus, ShieldCheck } from 'reicon-react'
+import { AngleDown, Check, CheckCircle, Copy, Lock, Plus, Receipt, ShieldCheck } from 'reicon-react'
 import { api } from '@/api/client'
 import type { DisputeReason, EscrowJob, JobStatus, Worker } from '@/api/types'
+import {
+  buildDayReceipt,
+  buildEscrowLockReceipt,
+  buildJobSummaryReceipt,
+  buildTransactionHistory,
+  isDaySettled,
+  type TransactionReceipt,
+} from '@/lib/transactions'
 import { messages } from '@/messages/en'
 import { AmountText } from '@/components/pw/AmountText'
 import { DisputeDialog } from '@/components/pw/DisputeDialog'
@@ -9,6 +17,8 @@ import { EmployerNewJobModal } from '@/components/pw/EmployerNewJobModal'
 import { EmployerShell } from '@/components/pw/EmployerShell'
 import { GradeBadge } from '@/components/pw/GradeBadge'
 import { StatusPill } from '@/components/pw/StatusPill'
+import { TransactionHistoryList } from '@/components/pw/TransactionHistoryList'
+import { TransactionReceiptModal } from '@/components/pw/TransactionReceiptModal'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
@@ -17,6 +27,7 @@ const PAGE_SIZE = 3
 export function ClientJobsPage() {
   const [jobs, setJobs] = useState<EscrowJob[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
+  const [viewMode, setViewMode] = useState<'jobs' | 'history'>('jobs')
   const [filter, setFilter] = useState<'all' | JobStatus>('all')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -29,6 +40,7 @@ export function ClientJobsPage() {
   const [disputeTarget, setDisputeTarget] = useState<{ jobId: string; dayNumber: number } | null>(
     null,
   )
+  const [activeReceipt, setActiveReceipt] = useState<TransactionReceipt | null>(null)
 
   async function load() {
     const [clientJobs, dir] = await Promise.all([api.getClientJobs(), api.getAvailableWorkers()])
@@ -97,15 +109,45 @@ export function ClientJobsPage() {
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">Jobs</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">
+            {viewMode === 'jobs' ? 'Jobs' : 'Transaction history'}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            All employer jobs, daily schedules, and supervisor links.
+            {viewMode === 'jobs'
+              ? 'All employer jobs, daily schedules, and supervisor links.'
+              : 'Every escrow funding lock and daily payout with downloadable receipts.'}
           </p>
         </div>
-        <Button size="md" onClick={() => setModalOpen(true)}>
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          <span>New job</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="inline-flex rounded-full border border-border bg-card p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode('jobs')}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                viewMode === 'jobs'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Jobs
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('history')}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                viewMode === 'history'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Transaction history
+            </button>
+          </div>
+          <Button size="md" onClick={() => setModalOpen(true)}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            <span>New job</span>
+          </Button>
+        </div>
       </div>
 
       {notice && (
@@ -119,7 +161,15 @@ export function ClientJobsPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1.5">
+      {viewMode === 'history' ? (
+        <TransactionHistoryList
+          items={buildTransactionHistory(jobs, 'employer')}
+          onSelect={setActiveReceipt}
+          emptyDescription="Escrow funding locks and settled daily payouts will appear here with downloadable receipts."
+        />
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-1.5">
         {(['all', 'IN_PROGRESS', 'FUNDED', 'AWAITING_FUNDING', 'COMPLETED'] as const).map((tab) => (
           <button
             key={tab}
@@ -317,6 +367,17 @@ export function ClientJobsPage() {
                           )}
                         </div>
 
+                        {isDaySettled(day) && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setActiveReceipt(buildDayReceipt(job, day, 'employer'))}
+                          >
+                            <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Receipt</span>
+                          </Button>
+                        )}
+
                         {day.status === 'DONE_REPORTED' && (
                           <div className="flex flex-wrap gap-2">
                             <Button
@@ -345,12 +406,49 @@ export function ClientJobsPage() {
                     ))}
                   </div>
 
-                  {job.receiptId && (
-                    <div className="flex items-center gap-2 pt-2 border-t border-border text-xs text-[var(--pw-positive)]">
-                      <ShieldCheck weight="Filled" className="h-4 w-4" aria-hidden="true" />
-                      <span>Job completed · Receipt {job.receiptId} issued</span>
+                  {(job.status !== 'AWAITING_FUNDING' &&
+                    job.status !== 'DRAFT' &&
+                    job.status !== 'CANCELLED') ||
+                  job.receiptId ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border text-xs">
+                      <div className="flex items-center gap-2 text-[var(--pw-positive)]">
+                        {job.receiptId ? (
+                          <>
+                            <ShieldCheck weight="Filled" className="h-4 w-4" aria-hidden="true" />
+                            <span>Job completed · Receipt {job.receiptId} issued</span>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Escrow funded via Paga NUBAN {job.fundingAccountNumber}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {job.status !== 'AWAITING_FUNDING' &&
+                          job.status !== 'DRAFT' &&
+                          job.status !== 'CANCELLED' && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setActiveReceipt(buildEscrowLockReceipt(job))}
+                            >
+                              <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
+                              <span>Escrow receipt</span>
+                            </Button>
+                          )}
+                        {job.receiptId && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setActiveReceipt(buildJobSummaryReceipt(job, 'employer'))}
+                          >
+                            <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Job receipt</span>
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               )}
             </Card>
@@ -383,6 +481,8 @@ export function ClientJobsPage() {
           </div>
         )}
       </div>
+        </>
+      )}
 
       <EmployerNewJobModal
         open={modalOpen}
@@ -396,6 +496,8 @@ export function ClientJobsPage() {
         onClose={() => setDisputeTarget(null)}
         onSubmit={handleDispute}
       />
+
+      <TransactionReceiptModal receipt={activeReceipt} onClose={() => setActiveReceipt(null)} />
     </EmployerShell>
   )
 }
