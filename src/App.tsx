@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { AppPreloader } from '@/components/pw/AppPreloader'
 import { DemoSimulator } from '@/components/pw/DemoSimulator'
 import { RequireAuth } from '@/components/pw/RequireAuth'
 import { ToastViewport } from '@/components/ui/toast'
@@ -39,6 +40,7 @@ function ScrollToTop() {
 export function App() {
   return (
     <BrowserRouter>
+      <AppPreloader />
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
