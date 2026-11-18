@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Briefcase, Message, Phone, ShieldCheck } from 'reicon-react'
 import { api } from '@/api/client'
+import { getSession } from '@/api/session'
 import { TRADES, type TradeType } from '@/api/types'
 import { ProvoMark } from '@/components/pw/ProvoMark'
 import { Button } from '@/components/ui/button'
@@ -58,6 +59,31 @@ export function SignInPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const rawRole = searchParams.get('role')
+
+  useEffect(() => {
+    const session = getSession()
+    if (!session?.accessToken) return
+    const { user } = session
+    if (rawRole === 'employer' && user.isClient) {
+      navigate('/employer', { replace: true })
+      return
+    }
+    if (rawRole === 'supervisor' && user.isSupervisor) {
+      navigate('/supervisor', { replace: true })
+      return
+    }
+    if (rawRole === 'worker' && user.isWorker) {
+      navigate('/worker', { replace: true })
+      return
+    }
+    if (user.isWorker) {
+      navigate('/worker', { replace: true })
+    } else if (user.isClient) {
+      navigate('/employer', { replace: true })
+    } else if (user.isSupervisor) {
+      navigate('/supervisor', { replace: true })
+    }
+  }, [navigate, rawRole])
   const role: 'worker' | 'employer' | 'supervisor' | null =
     rawRole === 'worker' || rawRole === 'employer' || rawRole === 'supervisor' ? rawRole : null
   const [workerMode, setWorkerMode] = useState<'login' | 'signup'>('login')

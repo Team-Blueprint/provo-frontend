@@ -50,6 +50,8 @@ export function UssdSimulatorPage() {
   const [jobs, setJobs] = useState<EscrowJob[]>([])
   const [soundOn, setSoundOn] = useState(true)
   const [pressedKey, setPressedKey] = useState<string | null>(null)
+  const [hasPressedKey, setHasPressedKey] = useState(false)
+  const [demoKeyIndex, setDemoKeyIndex] = useState(0)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const [simPhone, setSimPhone] = useState<string>(
     () => getSession()?.user.phone || '+2348011112222',
@@ -202,7 +204,19 @@ export function UssdSimulatorPage() {
     }
   }
 
+  useEffect(() => {
+    if (hasPressedKey) return
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return
+    }
+    const timer = window.setInterval(() => {
+      setDemoKeyIndex((prev) => (prev + 1) % 12)
+    }, 420)
+    return () => window.clearInterval(timer)
+  }, [hasPressedKey])
+
   function flashKey(id: string) {
+    setHasPressedKey(true)
     setPressedKey(id)
     setTimeout(() => setPressedKey((prev) => (prev === id ? null : prev)), 140)
   }
@@ -446,7 +460,7 @@ export function UssdSimulatorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-16">
+    <div className="min-h-screen bg-background text-foreground pb-10">
       <div className="sticky top-4 z-30 mx-auto max-w-5xl px-4">
         <header className="flex items-center justify-between rounded-full border border-border bg-card/90 px-5 py-2.5 backdrop-blur-md shadow-[var(--pw-shadow-card)]">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -469,7 +483,7 @@ export function UssdSimulatorPage() {
         </header>
       </div>
 
-      <main className="mx-auto max-w-5xl px-4 sm:px-8 py-8 sm:py-12 grid gap-10 lg:grid-cols-12 lg:items-center">
+      <main className="mx-auto max-w-5xl px-4 sm:px-8 py-6 sm:py-8 grid gap-8 lg:grid-cols-12 lg:items-center">
         <div className="lg:col-span-6 space-y-5">
           <div className="space-y-2">
             <p className="font-mono text-xs uppercase tracking-wider text-primary">
@@ -521,33 +535,6 @@ export function UssdSimulatorPage() {
             {ussdError && <p className="text-[11px] text-[var(--pw-critical)]">{ussdError}</p>}
           </form>
 
-          <div className="grid grid-cols-3 gap-2.5 text-xs">
-            <button
-              type="button"
-              onClick={() => handleKeyPress('1')}
-              className="rounded-[12px] border border-border bg-card p-3 text-left hover:border-primary transition-colors cursor-pointer"
-            >
-              <span className="font-mono text-[11px] text-primary block">Key 1</span>
-              <span className="font-semibold text-foreground">1. Balance</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleKeyPress('2')}
-              className="rounded-[12px] border border-border bg-card p-3 text-left hover:border-primary transition-colors cursor-pointer"
-            >
-              <span className="font-mono text-[11px] text-primary block">Key 2</span>
-              <span className="font-semibold text-foreground">2. Pending Jobs</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleKeyPress('3')}
-              className="rounded-[12px] border border-border bg-card p-3 text-left hover:border-primary transition-colors cursor-pointer"
-            >
-              <span className="font-mono text-[11px] text-primary block">Key 3</span>
-              <span className="font-semibold text-foreground">3. Withdraw</span>
-            </button>
-          </div>
-
           <div className="flex flex-wrap gap-2.5 pt-1">
             <Button
               size="sm"
@@ -566,7 +553,7 @@ export function UssdSimulatorPage() {
         </div>
 
         <div className="lg:col-span-6 flex justify-center">
-          <div className="relative w-full max-w-[290px] sm:max-w-[356px] drop-shadow-[0_32px_65px_rgba(11,22,40,0.35)] select-none">
+          <div className="relative w-full max-w-[240px] sm:max-w-[280px] drop-shadow-[0_32px_65px_rgba(11,22,40,0.35)] select-none">
             <img
               src="/feature-phone.png"
               alt="Feature phone running Provo USSD"
@@ -1068,19 +1055,24 @@ export function UssdSimulatorPage() {
             />
 
             <div className="absolute top-[70.55%] bottom-[2.4%] left-[3.85%] right-[5.5%] grid grid-cols-3 grid-rows-4 gap-0.5">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-label={`Keypad ${key}`}
-                  onClick={() => handleKeyPress(key)}
-                  className={`rounded-[6px] cursor-pointer transition-all ${
-                    pressedKey === key
-                      ? 'bg-white/30 scale-95'
-                      : 'hover:bg-white/10 active:bg-white/25'
-                  }`}
-                />
-              ))}
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key, idx) => {
+                const isDemoActive = !hasPressedKey && demoKeyIndex === idx
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-label={`Keypad ${key}`}
+                    onClick={() => handleKeyPress(key)}
+                    className={`rounded-[6px] cursor-pointer transition-all duration-300 ${
+                      pressedKey === key
+                        ? 'bg-white/30 scale-95'
+                        : isDemoActive
+                          ? 'bg-white/20 ring-1 ring-white/35'
+                          : 'hover:bg-white/10 active:bg-white/25'
+                    }`}
+                  />
+                )
+              })}
             </div>
           </div>
         </div>

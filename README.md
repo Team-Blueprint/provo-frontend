@@ -1,4 +1,4 @@
-# Provo (Proofwork) — Frontend
+# Provo — Frontend
 
 **Provo** protects daily pay for skilled artisans and turns settled work days into a verifiable **Profile Score** and work-history report for lenders.
 
@@ -12,8 +12,8 @@ This project is split across two repositories:
 
 | Service | Repository | Description |
 | --- | --- | --- |
-| **Frontend (this repo)** | [Team-Blueprint/proofwork-frontend](https://github.com/Team-Blueprint/proofwork-frontend) | React + Vite web application, USSD simulator, and interactive docs |
-| **Backend API** | [Team-Blueprint/proofwork-backend](https://github.com/Team-Blueprint/proofwork-backend) | REST API, Paga escrow integration, USSD/SMS webhooks, and signed snapshot ledger |
+| **Frontend (this repo)** | [Team-Blueprint/provo-frontend](https://github.com/Team-Blueprint/provo-frontend) | React + Vite web application, USSD simulator, and interactive docs |
+| **Backend API** | [Team-Blueprint/provo-backend](https://github.com/Team-Blueprint/provo-backend) | REST API, Paga escrow integration, USSD/SMS webhooks, and signed snapshot ledger |
 
 ---
 
@@ -54,7 +54,7 @@ This project is split across two repositories:
 ### Prerequisites
 
 - [Bun](https://bun.sh/) installed
-- Running instance of the [Provo Backend](https://github.com/Team-Blueprint/proofwork-backend) (or use mock mode for standalone UI testing)
+- Running instance of the [Provo Backend](https://github.com/Team-Blueprint/provo-backend) (or use mock mode for standalone UI testing)
 
 ### Installation
 
@@ -67,7 +67,7 @@ bun install
 Create a `.env` file in the root of `frontend/` if you want to point to a custom backend URL or enable mock mode:
 
 ```env
-# Base URL for the Proofwork backend API (defaults to /api)
+# Base URL for the Provo backend API (defaults to /api)
 VITE_API_BASE_URL=http://localhost:8000/api
 
 # Set to "true" to run with local in-browser mock data instead of the live backend

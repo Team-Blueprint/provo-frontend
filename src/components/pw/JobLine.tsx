@@ -1,5 +1,5 @@
 import type { EscrowJob } from '@/api/types'
-import { formatNaira, formatShortDate } from '@/lib/format'
+import { formatMaskedEmployer, formatNaira, formatShortDate } from '@/lib/format'
 import { AmountText } from './AmountText'
 import { GradeBadge } from './GradeBadge'
 import { StatusPill } from './StatusPill'
@@ -10,27 +10,9 @@ interface JobLineProps {
   onSelect?: (job: EscrowJob) => void
 }
 
-function maskEmployerLabel(name: string, token: string): string {
-  const clean = (name || '').trim()
-  if (clean.includes('***')) return clean
-  if (!clean || clean === 'Employer' || clean.startsWith('Client-')) {
-    const short = (token || '').split('-').pop() || token
-    return `Masked Employer (#${short})`
-  }
-  const masked = clean
-    .split(/\s+/)
-    .map((part) => {
-      if (part.length <= 2) return `${part[0]}*`
-      return `${part[0]}${'*'.repeat(Math.min(3, part.length - 2))}${part[part.length - 1]}`
-    })
-    .join(' ')
-  const short = (token || '').split('-').pop() || token
-  return short && !masked.includes(short) ? `${masked} (#${short})` : masked
-}
-
 export function JobLine({ job, mode, onSelect }: JobLineProps) {
   const clientLabel =
-    mode === 'lender' ? maskEmployerLabel(job.clientName, job.clientToken) : job.clientName
+    mode === 'lender' ? formatMaskedEmployer(job.clientName, job.clientToken) : job.clientName
   const paidDays = job.days.filter(
     (d) => d.status === 'PAID' || d.status === 'CONFIRMED' || d.status === 'AUTO_RELEASED',
   ).length

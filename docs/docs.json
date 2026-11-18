@@ -67,6 +67,7 @@
             "group": "For Lenders",
             "pages": [
               "lenders/overview",
+              "lenders/profile-score",
               "lenders/signed-snapshots"
             ]
           },

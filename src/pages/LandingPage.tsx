@@ -30,8 +30,8 @@ const FOUR_STEPS = [
   },
   {
     num: '04',
-    title: 'Lender reads signed snapshot',
-    body: 'With Emem’s consent, the lender opens an expiring report showing employer-confirmed, supervisor-confirmed, and auto-released days.',
+    title: 'Lender reads Profile Score & snapshot',
+    body: 'With Emem’s consent, the lender opens an expiring report showing a 0–100 Profile Score, tier band, and employer-confirmed, supervisor-confirmed, and auto-released days.',
   },
 ]
 
@@ -153,7 +153,7 @@ export function LandingPage() {
               to="/sign-in"
               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 active:scale-[0.96] transition-[background-color,scale] duration-150 ease-out"
             >
-              <span>Sign in</span>
+              <span>Get started</span>
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
@@ -237,7 +237,7 @@ export function LandingPage() {
                 onClick={() => setMobileNavOpen(false)}
                 className="block rounded-full bg-primary px-4 py-2.5 text-center text-xs font-semibold text-primary-foreground"
               >
-                Sign in
+                Get started
               </Link>
             </div>
           </div>
@@ -258,15 +258,15 @@ export function LandingPage() {
           className="pointer-events-none absolute inset-0 h-full w-full"
         >
           <path
-            d="M0,460 C320,330 540,560 880,410 C1140,295 1300,370 1440,310 L1440,900 L0,900 Z"
-            fill="rgba(0, 49, 112, 0.09)"
+            d="M0,400 Q720,560 1440,400 L1440,900 L0,900 Z"
+            fill="rgba(0, 49, 112, 0.06)"
           />
           <path
-            d="M0,610 C280,480 610,360 940,520 C1180,635 1320,540 1440,470 L1440,900 L0,900 Z"
-            fill="rgba(0, 49, 112, 0.12)"
+            d="M0,510 Q720,670 1440,510 L1440,900 L0,900 Z"
+            fill="rgba(0, 49, 112, 0.08)"
           />
           <path
-            d="M180,900 C310,640 510,510 720,510 C930,510 1130,640 1260,900 Z"
+            d="M0,620 Q720,780 1440,620 L1440,900 L0,900 Z"
             fill="rgba(0, 49, 112, 0.10)"
           />
         </svg>
@@ -311,9 +311,9 @@ export function LandingPage() {
             className="hero-enter flex flex-wrap items-center justify-center gap-3 pt-1"
             style={{ animationDelay: '310ms' }}
           >
-            <Link to="/sign-in">
+            <Link to="/ussd">
               <Button className="rounded-full">
-                <span>Get started</span>
+                <span>Try USSD</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </Link>
@@ -859,12 +859,12 @@ export function LandingPage() {
           className="pointer-events-none absolute inset-0 h-full w-full"
         >
           <path
-            d="M0,220 C340,110 620,310 980,180 C1210,95 1340,160 1440,120 L1440,520 L0,520 Z"
-            fill="rgba(0, 49, 112, 0.09)"
+            d="M0,140 Q720,260 1440,140 L1440,520 L0,520 Z"
+            fill="rgba(0, 49, 112, 0.06)"
           />
           <path
-            d="M0,330 C310,210 680,150 1020,290 C1220,375 1350,310 1440,260 L1440,520 L0,520 Z"
-            fill="rgba(0, 49, 112, 0.12)"
+            d="M0,240 Q720,360 1440,240 L1440,520 L0,520 Z"
+            fill="rgba(0, 49, 112, 0.09)"
           />
         </svg>
 

@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react'
-import { AngleDown, Briefcase, CheckCircle } from 'reicon-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { AngleDown, Briefcase, CheckCircle, Receipt } from 'reicon-react'
 import { api } from '@/api/client'
+import { workerDashboardQueryOptions } from '@/api/queries'
 import type { EscrowJob, JobStatus } from '@/api/types'
+import {
+  buildDayReceipt,
+  buildJobSummaryReceipt,
+  buildTransactionHistory,
+  isDaySettled,
+  type TransactionReceipt,
+} from '@/lib/transactions'
 import { messages } from '@/messages/en'
 import { AmountText } from '@/components/pw/AmountText'
 import { EmptyState } from '@/components/pw/EmptyState'
 import { GradeBadge } from '@/components/pw/GradeBadge'
 import { StatusPill } from '@/components/pw/StatusPill'
+import { TransactionHistoryList } from '@/components/pw/TransactionHistoryList'
+import { TransactionReceiptModal } from '@/components/pw/TransactionReceiptModal'
 import { WorkerShell } from '@/components/pw/WorkerShell'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
@@ -15,32 +26,28 @@ import { toast } from '@/components/ui/toast'
 const PAGE_SIZE = 3
 
 export function WorkerJobsPage() {
-  const [loading, setLoading] = useState(true)
-  const [jobs, setJobs] = useState<EscrowJob[]>([])
+  const queryClient = useQueryClient()
+  const { data, isPending, error } = useQuery(workerDashboardQueryOptions())
+  const loading = isPending
+  const workerId = data?.worker.id
+  const jobs = data?.jobs ?? []
+  const [viewMode, setViewMode] = useState<'jobs' | 'history'>('jobs')
   const [filter, setFilter] = useState<'all' | JobStatus>('all')
   const [search, setSearch] = useState('')
   const [markingKey, setMarkingKey] = useState<string | null>(null)
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({})
   const [page, setPage] = useState(1)
-
-  async function load() {
-    setLoading(true)
-    try {
-      const data = await api.getWorkerDashboard()
-      setJobs(data.jobs)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not load job records.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [activeReceipt, setActiveReceipt] = useState<TransactionReceipt | null>(null)
 
   useEffect(() => {
-    load()
-    const handler = () => load()
-    window.addEventListener('proofwork:demo-updated', handler)
-    return () => window.removeEventListener('proofwork:demo-updated', handler)
-  }, [])
+    if (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not load job records.')
+    }
+  }, [error])
+
+  async function load() {
+    await queryClient.invalidateQueries({ queryKey: ['worker', 'dashboard'] })
+  }
 
   const filtered = jobs
     .filter((j) => (filter === 'all' ? true : j.status === filter))
@@ -71,14 +78,53 @@ export function WorkerJobsPage() {
 
   return (
     <WorkerShell searchQuery={search} onSearchChange={setSearch} jobCount={jobs.length}>
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Job records</h1>
-        <p className="text-sm text-muted-foreground">
-          Day-by-day work schedule and payout outcomes.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">
+            {viewMode === 'jobs' ? 'Job records' : 'Transaction history'}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {viewMode === 'jobs'
+              ? 'Day-by-day work schedule and payout outcomes.'
+              : 'Every settled day payout and bank withdrawal with downloadable receipts.'}
+          </p>
+        </div>
+
+        <div className="inline-flex rounded-full border border-border bg-card p-1 self-start">
+          <button
+            type="button"
+            onClick={() => setViewMode('jobs')}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+              viewMode === 'jobs'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Job records
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('history')}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+              viewMode === 'history'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Transaction history
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      {viewMode === 'history' ? (
+        <TransactionHistoryList
+          items={buildTransactionHistory(jobs, 'worker', workerId)}
+          onSelect={setActiveReceipt}
+          emptyDescription="Settled day payouts and withdrawals will appear here with downloadable receipts."
+        />
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-1.5">
         {(['all', 'IN_PROGRESS', 'FUNDED', 'COMPLETED', 'AWAITING_FUNDING'] as const).map((tab) => (
           <button
             key={tab}
@@ -205,6 +251,17 @@ export function WorkerJobsPage() {
                           {day.outcome && <GradeBadge outcome={day.outcome} size="sm" />}
                         </div>
 
+                        {isDaySettled(day) && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setActiveReceipt(buildDayReceipt(job, day, 'worker'))}
+                          >
+                            <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Receipt</span>
+                          </Button>
+                        )}
+
                         {day.status === 'PENDING' &&
                           (job.status === 'FUNDED' || job.status === 'IN_PROGRESS') && (
                             <Button
@@ -239,6 +296,19 @@ export function WorkerJobsPage() {
                           )}
                       </div>
                     ))}
+                    {job.receiptId && (
+                      <div className="pt-3 flex items-center justify-between gap-2 text-xs text-[var(--pw-positive)]">
+                        <span>Job completed · Receipt {job.receiptId}</span>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setActiveReceipt(buildJobSummaryReceipt(job, 'worker'))}
+                        >
+                          <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span>Job receipt</span>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </Card>
@@ -272,6 +342,10 @@ export function WorkerJobsPage() {
           )}
         </div>
       )}
+        </>
+      )}
+
+      <TransactionReceiptModal receipt={activeReceipt} onClose={() => setActiveReceipt(null)} />
     </WorkerShell>
   )
 }

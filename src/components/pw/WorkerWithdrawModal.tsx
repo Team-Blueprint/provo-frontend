@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle, X } from 'reicon-react'
+import { CheckCircle, Receipt, X } from 'reicon-react'
 import { api } from '@/api/client'
 import type { Worker } from '@/api/types'
 import { formatNaira } from '@/lib/format'
+import { recordWithdrawalTransaction, type TransactionReceipt } from '@/lib/transactions'
+import { TransactionReceiptModal } from '@/components/pw/TransactionReceiptModal'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -46,7 +48,9 @@ export function WorkerWithdrawModal({
     amountNaira: number
     destination: string
     message: string
+    txReceipt: TransactionReceipt
   } | null>(null)
+  const [viewingReceipt, setViewingReceipt] = useState<TransactionReceipt | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -90,7 +94,21 @@ export function WorkerWithdrawModal({
 
     setSubmitting(true)
     try {
-      const res = await api.ussdWithdraw(worker.phone, amount)
+      const targetAccount =
+        destinationMode === 'other'
+          ? otherAccount.trim()
+          : worker.bankAccountNumber || worker.pagaAccountNumber
+      const targetBank = destinationMode === 'other' ? otherBank : worker.bankName
+      const res = await api.ussdWithdraw(worker.phone, amount, {
+        accountNumber: targetAccount,
+        bankCode: targetBank,
+        pin,
+      })
+      const txReceipt = recordWithdrawalTransaction(worker.id, {
+        amountNaira: amount,
+        destination,
+        message: res.displayText,
+      })
       toast.success(
         `${formatNaira(amount)} queued to ${destination}.`,
         'Withdrawal requested',
@@ -99,6 +117,7 @@ export function WorkerWithdrawModal({
         amountNaira: amount,
         destination,
         message: res.displayText,
+        txReceipt,
       })
       onSuccess(amount, destination)
     } catch (err) {
@@ -150,7 +169,15 @@ export function WorkerWithdrawModal({
               <p className="text-xs text-foreground">Destination: {receipt.destination}</p>
               <p className="text-xs text-muted-foreground">{receipt.message}</p>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setViewingReceipt(receipt.txReceipt)}
+              >
+                <Receipt className="h-4 w-4" aria-hidden="true" />
+                <span>View receipt</span>
+              </Button>
               <Button type="button" onClick={onClose}>
                 Done
               </Button>
@@ -288,6 +315,10 @@ export function WorkerWithdrawModal({
           </form>
         )}
       </Card>
+      <TransactionReceiptModal
+        receipt={viewingReceipt}
+        onClose={() => setViewingReceipt(null)}
+      />
     </div>
   )
 }

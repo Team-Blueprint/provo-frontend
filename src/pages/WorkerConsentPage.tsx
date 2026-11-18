@@ -35,7 +35,7 @@ export function WorkerConsentPage() {
         </p>
       </div>
 
-      <Card className="p-6 space-y-5 max-w-xl">
+      <Card className="w-full p-6 space-y-5">
         <div className="flex items-center gap-2 text-primary">
           <ShieldCheck weight="Filled" className="h-5 w-5" aria-hidden="true" />
           <span className="text-sm font-medium">Worker consent</span>
@@ -57,7 +57,7 @@ export function WorkerConsentPage() {
         </p>
 
         <ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
-          <li>Shows your confirmed jobs, active months, and total verified pay.</li>
+          <li>Shows your Profile Score, confirmed jobs, active months, and total verified pay.</li>
           <li>Employer phone numbers and bank accounts stay hidden behind tokens.</li>
           <li>The link expires automatically in 7 days.</li>
         </ul>

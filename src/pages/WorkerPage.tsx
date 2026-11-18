@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   ArrowUpRight,
@@ -8,7 +9,7 @@ import {
   Copy,
 } from 'reicon-react'
 import { api } from '@/api/client'
-import type { EscrowJob, ReportPayload, Worker } from '@/api/types'
+import { workerDashboardQueryOptions } from '@/api/queries'
 import { formatNaira, getTierDetails } from '@/lib/format'
 import { EmptyState } from '@/components/pw/EmptyState'
 import { JobLine } from '@/components/pw/JobLine'
@@ -19,38 +20,33 @@ import { Card, Skeleton } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
 
 export function WorkerPage() {
-  const [loading, setLoading] = useState(true)
-  const [worker, setWorker] = useState<Worker | null>(null)
-  const [jobs, setJobs] = useState<EscrowJob[]>([])
-  const [reportPreview, setReportPreview] = useState<ReportPayload | null>(null)
+  const queryClient = useQueryClient()
+  const { data, isPending, error } = useQuery(workerDashboardQueryOptions())
+  const worker = data?.worker ?? null
+  const jobs = data?.jobs ?? []
+  const reportPreview = data?.reportPreview ?? null
+  const loading = isPending
   const [copiedNuban, setCopiedNuban] = useState(false)
   const [markingKey, setMarkingKey] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [withdrawnNaira, setWithdrawnNaira] = useState(0)
 
-  async function load() {
-    setLoading(true)
-    try {
-      const data = await api.getWorkerDashboard()
-      setWorker(data.worker)
-      setJobs(data.jobs)
-      setReportPreview(data.reportPreview)
-      const saved = Number(window.localStorage.getItem(`proofwork_withdrawn_${data.worker.id}`) || '0')
-      setWithdrawnNaira(Number.isFinite(saved) ? saved : 0)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not load worker dashboard.')
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not load worker dashboard.')
     }
-  }
+  }, [error])
 
   useEffect(() => {
-    load()
-    const handler = () => load()
-    window.addEventListener('proofwork:demo-updated', handler)
-    return () => window.removeEventListener('proofwork:demo-updated', handler)
-  }, [])
+    if (!worker?.id) return
+    const saved = Number(window.localStorage.getItem(`proofwork_withdrawn_${worker.id}`) || '0')
+    setWithdrawnNaira(Number.isFinite(saved) ? saved : 0)
+  }, [worker?.id])
+
+  async function load() {
+    await queryClient.invalidateQueries({ queryKey: ['worker', 'dashboard'] })
+  }
 
   const activeJobs = jobs.filter((j) => j.status === 'FUNDED' || j.status === 'IN_PROGRESS')
   const settledDays = jobs
@@ -165,7 +161,7 @@ export function WorkerPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-[var(--pw-radius-lg)] bg-primary text-primary-foreground p-5 flex flex-col justify-between gap-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium opacity-90">Provo Score</span>
+                  <span className="text-sm font-medium opacity-90">Profile Score</span>
                   <Link
                     to="/worker/consent"
                     aria-label="Share report"
@@ -174,9 +170,15 @@ export function WorkerPage() {
                     <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
                 </div>
-                <p className="text-4xl font-bold tabular-nums">{reportPreview.score}</p>
+                <p className="text-4xl font-bold tabular-nums">
+                  {reportPreview.score}
+                  <span className="text-base font-normal opacity-75"> / 100</span>
+                </p>
                 <p className="text-xs opacity-85">
-                  {getTierDetails(reportPreview.score).tier} tier · /100
+                  {getTierDetails(reportPreview.score).tier} tier ·{' '}
+                  {getTierDetails(reportPreview.score).nextTier
+                    ? `Next: ${getTierDetails(reportPreview.score).nextTier}`
+                    : 'Top tier'}
                 </p>
               </div>
 
@@ -370,7 +372,7 @@ export function WorkerPage() {
                   </Button>
                 </div>
                 <p className="font-mono text-xl sm:text-2xl font-semibold tracking-wider text-foreground">
-                  {worker.pagaAccountNumber.replace(/(\d{4})(\d{4})(\d{2})/, '$1 $2 $3')}
+                  {worker.pagaAccountNumber.replace(/(\d{3})(\d{4})(\d{3})/, '$1 $2 $3')}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Confirmed days pay out here and settle to {worker.bankName} (
