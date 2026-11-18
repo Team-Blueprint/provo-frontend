@@ -871,12 +871,12 @@ export const mockAdapter = {
     saveState(state)
   },
 
-  async getWorkerSettings(): Promise<{ alertChannel: 'whatsapp' | 'sms' }> {
+  async getWorkerSettings(): Promise<{ alertChannel: 'telegram' | 'sms' }> {
     const raw = window.localStorage.getItem('proofwork_alert_channel')
-    return { alertChannel: raw === 'sms' ? 'sms' : 'whatsapp' }
+    return { alertChannel: raw === 'sms' ? 'sms' : 'telegram' }
   },
 
-  async updateWorkerSettings(alertChannel: 'whatsapp' | 'sms') {
+  async updateWorkerSettings(alertChannel: 'telegram' | 'sms') {
     window.localStorage.setItem('proofwork_alert_channel', alertChannel)
     return { alertChannel }
   },

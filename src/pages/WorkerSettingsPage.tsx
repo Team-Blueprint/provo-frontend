@@ -15,7 +15,7 @@ export function WorkerSettingsPage() {
   const activeTab: SettingsTab = rawTab === 'preferences' ? 'preferences' : 'account'
 
   const [worker, setWorker] = useState<Worker | null>(null)
-  const [channel, setChannel] = useState<'whatsapp' | 'sms'>('whatsapp')
+  const [channel, setChannel] = useState<'telegram' | 'sms'>('telegram')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -24,7 +24,10 @@ export function WorkerSettingsPage() {
       api.getWorkerDashboard().then((d) => setWorker(d.worker)).catch(() => {})
     }
     sync()
-    api.getWorkerSettings().then((res) => setChannel(res.alertChannel)).catch(() => {})
+    api
+      .getWorkerSettings()
+      .then((res) => setChannel(res.alertChannel === 'sms' ? 'sms' : 'telegram'))
+      .catch(() => {})
     window.addEventListener('proofwork:demo-updated', sync)
     return () => window.removeEventListener('proofwork:demo-updated', sync)
   }, [])
@@ -152,11 +155,11 @@ export function WorkerSettingsPage() {
               id="pref-channel"
               value={channel}
               onValueChange={(v) => {
-                setChannel(v === 'sms' ? 'sms' : 'whatsapp')
+                setChannel(v === 'sms' ? 'sms' : 'telegram')
                 setSaved(false)
               }}
               options={[
-                { value: 'whatsapp', label: 'WhatsApp + SMS fallback' },
+                { value: 'telegram', label: 'Telegram + SMS fallback' },
                 { value: 'sms', label: 'SMS only' },
               ]}
             />

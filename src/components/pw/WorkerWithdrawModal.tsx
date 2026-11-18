@@ -94,7 +94,16 @@ export function WorkerWithdrawModal({
 
     setSubmitting(true)
     try {
-      const res = await api.ussdWithdraw(worker.phone, amount)
+      const targetAccount =
+        destinationMode === 'other'
+          ? otherAccount.trim()
+          : worker.bankAccountNumber || worker.pagaAccountNumber
+      const targetBank = destinationMode === 'other' ? otherBank : worker.bankName
+      const res = await api.ussdWithdraw(worker.phone, amount, {
+        accountNumber: targetAccount,
+        bankCode: targetBank,
+        pin,
+      })
       const txReceipt = recordWithdrawalTransaction(worker.id, {
         amountNaira: amount,
         destination,
