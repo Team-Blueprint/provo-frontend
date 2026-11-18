@@ -211,7 +211,7 @@ export function UssdSimulatorPage() {
     }
     const timer = window.setInterval(() => {
       setDemoKeyIndex((prev) => (prev + 1) % 12)
-    }, 180)
+    }, 420)
     return () => window.clearInterval(timer)
   }, [hasPressedKey])
 
@@ -1063,7 +1063,7 @@ export function UssdSimulatorPage() {
                     type="button"
                     aria-label={`Keypad ${key}`}
                     onClick={() => handleKeyPress(key)}
-                    className={`rounded-[6px] cursor-pointer transition-all duration-150 ${
+                    className={`rounded-[6px] cursor-pointer transition-all duration-300 ${
                       pressedKey === key
                         ? 'bg-white/30 scale-95'
                         : isDemoActive
