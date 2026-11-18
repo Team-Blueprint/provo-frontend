@@ -10,7 +10,7 @@ import {
 import { api } from '@/api/client'
 import type { ConfirmationOutcome, ReportPayload } from '@/api/types'
 import { downloadJobHistoryImage } from '@/lib/downloadJobHistory'
-import { formatNaira, formatShortDate } from '@/lib/format'
+import { formatNaira, formatShortDate, getTierDetails } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
 import { EmptyState } from '@/components/pw/EmptyState'
@@ -192,17 +192,58 @@ export function LenderReportPage() {
 
               <div className="rounded-[14px] border border-border bg-muted/40 px-5 py-3.5 text-left sm:text-right shrink-0">
                 <span className="block text-xs font-medium text-muted-foreground">
-                  Total verified pay
+                  Profile score
                 </span>
                 <span className="text-3xl font-bold tabular-nums text-foreground block">
-                  {formatNaira(totalSettledNaira)}
+                  {report.score}
+                  <span className="text-base font-normal text-muted-foreground"> / 100</span>
                 </span>
                 <span className="block text-xs font-medium text-primary mt-0.5 tabular-nums">
-                  {report.clientTokens.length}{' '}
-                  {report.clientTokens.length === 1 ? 'employer' : 'employers'} · Paga escrow
+                  {getTierDetails(report.score).tier} tier · {report.clientTokens.length}{' '}
+                  {report.clientTokens.length === 1 ? 'employer' : 'employers'}
                 </span>
               </div>
             </Card>
+
+            {report.components.length > 0 && (
+              <Card className="p-5 sm:p-6 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-base font-semibold text-foreground">
+                      Profile score breakdown
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      {getTierDetails(report.score).unlocks}
+                    </p>
+                  </div>
+                  <Link
+                    to="/docs/lenders/profile-score"
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    How scoring &amp; tiers work →
+                  </Link>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  {report.components.map((comp) => (
+                    <div
+                      key={comp.key}
+                      className="rounded-[var(--pw-radius-md)] border border-border bg-muted/30 p-3 space-y-1"
+                    >
+                      <span className="block text-xs text-muted-foreground">{comp.label}</span>
+                      <span className="block text-lg font-semibold tabular-nums text-foreground">
+                        {comp.points}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          /{comp.maxPoints}
+                        </span>
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground leading-snug">
+                        {comp.detail}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {report.circularFlags.length > 0 && (
               <Card className="border-[var(--pw-critical)]/40 bg-[var(--pw-critical-tint)] p-4 space-y-1">

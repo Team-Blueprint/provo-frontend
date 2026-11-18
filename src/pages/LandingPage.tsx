@@ -30,8 +30,8 @@ const FOUR_STEPS = [
   },
   {
     num: '04',
-    title: 'Lender reads signed snapshot',
-    body: 'With Emem’s consent, the lender opens an expiring report showing employer-confirmed, supervisor-confirmed, and auto-released days.',
+    title: 'Lender reads Profile Score & snapshot',
+    body: 'With Emem’s consent, the lender opens an expiring report showing a 0–100 Profile Score, tier band, and employer-confirmed, supervisor-confirmed, and auto-released days.',
   },
 ]
 

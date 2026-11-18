@@ -165,7 +165,7 @@ export function WorkerPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-[var(--pw-radius-lg)] bg-primary text-primary-foreground p-5 flex flex-col justify-between gap-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium opacity-90">Provo Score</span>
+                  <span className="text-sm font-medium opacity-90">Profile Score</span>
                   <Link
                     to="/worker/consent"
                     aria-label="Share report"
@@ -174,9 +174,15 @@ export function WorkerPage() {
                     <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
                 </div>
-                <p className="text-4xl font-bold tabular-nums">{reportPreview.score}</p>
+                <p className="text-4xl font-bold tabular-nums">
+                  {reportPreview.score}
+                  <span className="text-base font-normal opacity-75"> / 100</span>
+                </p>
                 <p className="text-xs opacity-85">
-                  {getTierDetails(reportPreview.score).tier} tier · /100
+                  {getTierDetails(reportPreview.score).tier} tier ·{' '}
+                  {getTierDetails(reportPreview.score).nextTier
+                    ? `Next: ${getTierDetails(reportPreview.score).nextTier}`
+                    : 'Top tier'}
                 </p>
               </div>
 
