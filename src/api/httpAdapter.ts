@@ -264,15 +264,21 @@ function mapJobDay(d: BackendJobDay): JobDay {
 }
 
 function mapJob(
-  j: BackendJob,
+  j: BackendJob & { client_name?: string | null },
   workerNameLookup?: Map<string, string>,
 ): EscrowJob {
   const workerName =
     (j.worker_id && workerNameLookup?.get(j.worker_id)) || "Assigned artisan";
+  const session = getSession();
+  const fallbackEmployer =
+    session?.user.id === j.client_id && session.user.name
+      ? session.user.name
+      : `Employer #${j.client_id.slice(0, 4).toUpperCase()}`;
+  const clientName = j.client_name?.trim() || fallbackEmployer;
   return {
     id: j.id,
     clientId: j.client_id,
-    clientName: "Employer",
+    clientName,
     clientToken: `CL-${j.client_id.slice(0, 6).toUpperCase()}`,
     workerId: j.worker_id ?? "",
     workerName,

@@ -376,7 +376,7 @@ export function WorkerPage() {
                   </Button>
                 </div>
                 <p className="font-mono text-xl sm:text-2xl font-semibold tracking-wider text-foreground">
-                  {worker.pagaAccountNumber.replace(/(\d{4})(\d{4})(\d{2})/, '$1 $2 $3')}
+                  {worker.pagaAccountNumber.replace(/(\d{3})(\d{4})(\d{3})/, '$1 $2 $3')}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Confirmed days pay out here and settle to {worker.bankName} (
