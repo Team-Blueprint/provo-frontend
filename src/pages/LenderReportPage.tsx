@@ -10,7 +10,7 @@ import {
 import { api } from '@/api/client'
 import type { ConfirmationOutcome, ReportPayload } from '@/api/types'
 import { downloadJobHistoryImage } from '@/lib/downloadJobHistory'
-import { formatNaira, formatShortDate, getTierDetails } from '@/lib/format'
+import { formatMaskedEmployer, formatNaira, formatShortDate, getTierDetails } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
 import { EmptyState } from '@/components/pw/EmptyState'
@@ -330,7 +330,7 @@ export function LenderReportPage() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-sm font-semibold text-foreground truncate">
-                          {ct.displayLabel}
+                          {formatMaskedEmployer(ct.displayLabel, ct.token)}
                         </span>
                         <span className="text-[11px] text-[var(--pw-positive)] font-medium shrink-0">
                           Verified

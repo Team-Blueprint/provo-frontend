@@ -55,7 +55,7 @@ export function WorkerShell({
   children,
   searchQuery,
   onSearchChange,
-  jobCount = 11,
+  jobCount,
 }: WorkerShellProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -64,12 +64,18 @@ export function WorkerShell({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeWorker, setActiveWorker] = useState<Worker | null>(null)
+  const [fetchedJobCount, setFetchedJobCount] = useState<number | undefined>(undefined)
   const modalInputRef = useRef<HTMLInputElement>(null)
   const query = searchQuery ?? localSearch
   const setQuery = onSearchChange ?? setLocalSearch
+  const resolvedJobCount = jobCount ?? fetchedJobCount
 
   useEffect(() => {
-    const loadWorker = () => api.getWorkerDashboard().then((d) => setActiveWorker(d.worker))
+    const loadWorker = () =>
+      api.getWorkerDashboard().then((d) => {
+        setActiveWorker(d.worker)
+        setFetchedJobCount(d.jobs.length)
+      })
     loadWorker()
     window.addEventListener('proofwork:demo-updated', loadWorker)
     return () => window.removeEventListener('proofwork:demo-updated', loadWorker)
@@ -168,9 +174,9 @@ export function WorkerShell({
                           />
                           {!collapsed && <span>{item.label}</span>}
                         </span>
-                        {!collapsed && item.showBadge && (
+                        {!collapsed && item.showBadge && resolvedJobCount !== undefined && (
                           <span className="rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] font-semibold text-primary-foreground">
-                            {jobCount}
+                            {resolvedJobCount}
                           </span>
                         )}
                       </Link>
