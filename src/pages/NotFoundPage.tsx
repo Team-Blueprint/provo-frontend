@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Search } from 'reicon-react'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
@@ -13,12 +14,12 @@ const WAYFINDER_LINKS = [
   {
     title: 'Employer Portal',
     description: 'Create a job, lock funds via Paga, and confirm or dispute days.',
-    to: '/client',
+    to: '/employer',
   },
   {
     title: 'Employer Jobs',
     description: 'All employer jobs, daily schedules, NUBAN accounts, and supervisor links.',
-    to: '/client/jobs',
+    to: '/employer/jobs',
   },
   {
     title: 'Supervisor View',
@@ -49,10 +50,7 @@ export function NotFoundPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between p-6 sm:p-10">
       <header className="mx-auto w-full max-w-3xl flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-semibold text-foreground">
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-[3px] bg-[var(--pw-brick)]"
-            aria-hidden="true"
-          />
+          <ProvoMark className="h-5 w-5" />
           <span>Provo</span>
         </Link>
         <Link to="/">

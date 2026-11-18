@@ -46,7 +46,7 @@ export function WorkerShareLinkPage() {
   if (days.trim() && Number(days) > 0) params.set('days', days.trim())
   if (description.trim()) params.set('desc', description.trim())
 
-  const relativePath = `/client?${params.toString()}`
+  const relativePath = `/employer?${params.toString()}`
   const shareUrl =
     typeof window !== 'undefined' ? `${window.location.origin}${relativePath}` : relativePath
 

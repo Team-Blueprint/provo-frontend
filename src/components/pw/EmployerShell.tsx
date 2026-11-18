@@ -9,6 +9,7 @@ import {
   UserTick,
 } from 'reicon-react'
 import { OfflineBanner } from '@/components/pw/OfflineBanner'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 import { Card } from '@/components/ui/card'
 
 interface EmployerShellProps {
@@ -22,14 +23,14 @@ interface EmployerShellProps {
 }
 
 const NAV_ITEMS = [
-  { to: '/client', label: 'Overview', icon: Home, showPending: true },
-  { to: '/client/jobs', label: 'Jobs', icon: Briefcase, showJobs: true },
+  { to: '/employer', label: 'Overview', icon: Home, showPending: true },
+  { to: '/employer/jobs', label: 'Jobs', icon: Briefcase, showJobs: true },
   { to: '/supervisor', label: 'Supervisor', icon: UserTick },
 ]
 
 const QUICK_COMMANDS = [
-  { to: '/client', label: 'Employer overview', meta: 'Pending confirmations & summary' },
-  { to: '/client/jobs', label: 'Employer jobs', meta: 'All jobs, schedules & NUBANs' },
+  { to: '/employer', label: 'Employer overview', meta: 'Pending confirmations & summary' },
+  { to: '/employer/jobs', label: 'Employer jobs', meta: 'All jobs, schedules & NUBANs' },
   { to: '/supervisor', label: 'Supervisor view', meta: 'Site foreman daily sign-off' },
   { to: '/ussd', label: 'USSD simulator', meta: 'Dial *123# in simulator' },
 ]
@@ -114,10 +115,7 @@ export function EmployerShell({
               className={`flex items-center px-3 pt-1 ${collapsed ? 'justify-center' : 'justify-between'}`}
             >
               <Link to="/" className="flex items-center gap-2 font-semibold text-background" title="Provo">
-                <span
-                  className="inline-block h-3 w-3 rounded-[3px] bg-[var(--pw-brick)] shrink-0"
-                  aria-hidden="true"
-                />
+                <ProvoMark className="h-5 w-5" />
                 {!collapsed && <span className="text-base">Provo</span>}
               </Link>
               {!collapsed && (
@@ -198,10 +196,7 @@ export function EmployerShell({
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 flex-1 max-w-sm">
                 <Link to="/" className="lg:hidden inline-flex items-center gap-2 font-semibold text-foreground">
-                  <span
-                    className="inline-block h-3 w-3 rounded-[3px] bg-[var(--pw-brick)]"
-                    aria-hidden="true"
-                  />
+                  <ProvoMark className="h-5 w-5" />
                   <span>Provo</span>
                 </Link>
                 <button

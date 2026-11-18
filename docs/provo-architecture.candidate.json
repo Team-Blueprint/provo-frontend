@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Provo System Architecture",
+    "output": "frontend/public/architecture-diagram.html",
+    "quality_profile": "showcase",
+    "locale": "en"
+  },
+  "components": [
+    {
+      "id": "users",
+      "type": "external",
+      "label": "Workers & Employers",
+      "sublabel": "Web, Telegram, USSD",
+      "pos": [40, 230],
+      "size": [156, 66]
+    },
+    {
+      "id": "lenders",
+      "type": "external",
+      "label": "Lenders",
+      "sublabel": "Report link /report/:token",
+      "pos": [40, 60],
+      "size": [156, 64]
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "React Web App",
+      "sublabel": "Vite + Proofwork UI",
+      "pos": [290, 230],
+      "size": [146, 66]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI Server",
+      "sublabel": "Auth, Jobs, USSD, Reports",
+      "pos": [540, 230],
+      "size": [156, 66]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "PIN & OTP Auth",
+      "sublabel": "6-digit PIN + JWT",
+      "pos": [540, 60],
+      "size": [156, 64],
+      "tag": "Phone + PIN"
+    },
+    {
+      "id": "domain",
+      "type": "backend",
+      "label": "Domain Rules",
+      "sublabel": "State machine & Fraud",
+      "pos": [800, 230],
+      "size": [162, 66]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Database & Ledger",
+      "sublabel": "Jobs, Days, Audit Log",
+      "pos": [800, 400],
+      "size": [162, 66]
+    },
+    {
+      "id": "workers",
+      "type": "messagebus",
+      "label": "24h Timer & Payouts",
+      "sublabel": "Auto-release + Outbox",
+      "pos": [540, 400],
+      "size": [156, 66]
+    },
+    {
+      "id": "paga",
+      "type": "external",
+      "label": "PagaEngine",
+      "sublabel": "10-digit NUBAN + Payouts",
+      "pos": [290, 400],
+      "size": [156, 66]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "service",
+      "label": "Provo Backend (FastAPI)",
+      "wraps": ["api", "auth", "domain", "workers", "db"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "users-to-web",
+      "from": "users",
+      "to": "web",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "lenders-to-api",
+      "from": "lenders",
+      "to": "api",
+      "label": "GET /reports/{token}",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [[470, 92], [470, 175], [618, 175]]
+    },
+    {
+      "id": "web-to-api",
+      "from": "web",
+      "to": "api",
+      "label": "REST + JWT"
+    },
+    {
+      "id": "auth-to-api",
+      "from": "auth",
+      "to": "api",
+      "label": "verify PIN/OTP",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-to-domain",
+      "from": "api",
+      "to": "domain",
+      "label": "validate & check"
+    },
+    {
+      "id": "domain-to-db",
+      "from": "domain",
+      "to": "db",
+      "label": "atomic write",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "workers-to-db",
+      "from": "workers",
+      "to": "db",
+      "label": "poll 24h due",
+      "variant": "dashed"
+    },
+    {
+      "id": "workers-to-paga",
+      "from": "workers",
+      "to": "paga",
+      "label": "disburse day pay",
+      "variant": "emphasis"
+    },
+    {
+      "id": "paga-to-api",
+      "from": "paga",
+      "to": "api",
+      "label": "HMAC webhook",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [[368, 345], [618, 345]]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Channels & Auth",
+      "items": [
+        "Web app, Telegram bot, and USSD (*123#) share one backend",
+        "Phone + 6-digit PIN login and SMS OTP signup"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Money & Payouts",
+      "items": [
+        "One-time 10-digit Paga NUBAN per job",
+        "24-hour auto-release timer and retryable outbox payout queue"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust & Lending",
+      "items": [
+        "Verified work signals (confirmed days, active months, repeat employers)",
+        "Consent-gated lender reports with masked employer IDs"
+      ]
+    }
+  ]
+}

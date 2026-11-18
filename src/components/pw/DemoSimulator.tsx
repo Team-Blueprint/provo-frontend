@@ -235,8 +235,8 @@ export function DemoSimulator({ onUpdate }: { onUpdate?: () => void }) {
               <div className="grid grid-cols-2 gap-1.5">
                 {[
                   { to: '/worker', label: 'Worker Demo' },
-                  { to: '/client', label: 'Employer Overview' },
-                  { to: '/client/jobs', label: 'Employer Jobs' },
+                  { to: '/employer', label: 'Employer Overview' },
+                  { to: '/employer/jobs', label: 'Employer Jobs' },
                   { to: '/supervisor', label: 'Supervisor View' },
                   { to: '/ussd', label: 'USSD Simulator' },
                   { to: '/sign-in', label: 'Sign In / Demo' },

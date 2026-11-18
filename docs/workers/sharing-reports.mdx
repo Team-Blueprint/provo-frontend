@@ -3,21 +3,21 @@ title: "Consent & sharing reports"
 description: "How workers generate expiring lender links and revoke access at any time."
 ---
 
-Your work history belongs to you. No lender can view your Provo credibility report without an active, worker-authorized share token.
+Your work history belongs to you. No lender can view your Provo work report without an active, worker-authorized share token.
 
 ## Generating a lender link
 
 1. Open [Consent & Share](/worker/consent) in your worker workspace.
 2. Enter the lender's name (for example, `LAPO Microfinance` or `FairMoney`) and choose an expiry window (such as 7 or 30 days).
 3. Review the exact fields included in the report:
-   - Your 0–100 credibility score, tier band, and score breakdown
-   - Verified days, repeat clients, and active months
-   - Tokenized client IDs (for example, `Client #8F2A`), without client names or phone numbers
+   - Total settled earnings, active months, and confirmation breakdown (`Employer confirmed`, `Supervisor confirmed`, `Auto-released`)
+   - Verified days, repeat employers, and active months
+   - Tokenized employer IDs (for example, `Employer #8F2A`), without employer names or phone numbers
 4. Confirm consent (`POST /workers/{id}/shares`) to receive a unique URL (`/report/{token}`).
 
-## Revoking access
+## Managing & revoking access
 
-Every share link records `granted_at`, `expires_at`, and `revoked_at`. Revoking a link immediately causes `GET /reports/{token}` to return `410 Gone` (`CONSENT_EXPIRED_OR_REVOKED`), cutting off further access.
+Every share link records `granted_at`, `expires_at`, and `revoked_at`. Workers can list active and past share grants via `GET /workers/{id}/shares` and revoke any token immediately via `POST /workers/{id}/shares/{token}/revoke`, which causes `GET /reports/{token}` to return `410 Gone` (`CONSENT_EXPIRED_OR_REVOKED`).
 
 <Tip>
 Under Nigeria's Data Protection Act (NDPA) and CBN consumer protection rules, consent must be specific, informed, and revocable. Every consent grant and revocation is written to the append-only audit log.

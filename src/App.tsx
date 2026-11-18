@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { DemoSimulator } from '@/components/pw/DemoSimulator'
+import { RequireAuth } from '@/components/pw/RequireAuth'
+import { ToastViewport } from '@/components/ui/toast'
 import { AdminPage } from '@/pages/AdminPage'
 import { CheckoutPage } from '@/pages/CheckoutPage'
 import { ClientJobsPage } from '@/pages/ClientJobsPage'
@@ -11,8 +13,10 @@ import { LandingPage } from '@/pages/LandingPage'
 import { LegalPage } from '@/pages/LegalPage'
 import { LenderReportPage } from '@/pages/LenderReportPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { SetPinPage } from '@/pages/SetPinPage'
 import { SignInPage } from '@/pages/SignInPage'
 import { SupervisorPage } from '@/pages/SupervisorPage'
+import { SupervisorVerifyPage } from '@/pages/SupervisorVerifyPage'
 import { UssdSimulatorPage } from '@/pages/UssdSimulatorPage'
 import { WorkerConsentPage } from '@/pages/WorkerConsentPage'
 import { WorkerHelpPage } from '@/pages/WorkerHelpPage'
@@ -41,31 +45,139 @@ export function App() {
         <Route path="/docs" element={<DocsPage />} />
         <Route path="/docs/*" element={<DocsPage />} />
         <Route path="/design-system" element={<DesignSystemPage />} />
-        <Route path="/worker" element={<WorkerPage />} />
-        <Route path="/worker/jobs" element={<WorkerJobsPage />} />
-        <Route path="/worker/consent" element={<WorkerConsentPage />} />
-        <Route path="/worker/share-link" element={<WorkerShareLinkPage />} />
-        <Route path="/worker/profile" element={<WorkerProfilePage />} />
-        <Route path="/worker/settings" element={<WorkerSettingsPage />} />
-        <Route path="/worker/help" element={<WorkerHelpPage />} />
-        <Route path="/client" element={<ClientPage />} />
-        <Route path="/client/jobs" element={<ClientJobsPage />} />
-        <Route path="/employer" element={<ClientPage />} />
-        <Route path="/employer/jobs" element={<ClientJobsPage />} />
-        <Route path="/jobs" element={<ClientJobsPage />} />
-        <Route path="/checkout/:jobId" element={<CheckoutPage />} />
-        <Route path="/supervisor" element={<SupervisorPage />} />
+        <Route
+          path="/worker"
+          element={
+            <RequireAuth role="worker">
+              <WorkerPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/worker/jobs"
+          element={
+            <RequireAuth role="worker">
+              <WorkerJobsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/worker/consent"
+          element={
+            <RequireAuth role="worker">
+              <WorkerConsentPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/worker/share-link"
+          element={
+            <RequireAuth role="worker">
+              <WorkerShareLinkPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/worker/profile"
+          element={
+            <RequireAuth role="worker">
+              <WorkerProfilePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/worker/settings"
+          element={
+            <RequireAuth role="worker">
+              <WorkerSettingsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/worker/help"
+          element={
+            <RequireAuth role="worker">
+              <WorkerHelpPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/client"
+          element={
+            <RequireAuth role="employer">
+              <ClientPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/client/jobs"
+          element={
+            <RequireAuth role="employer">
+              <ClientJobsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/employer"
+          element={
+            <RequireAuth role="employer">
+              <ClientPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/employer/jobs"
+          element={
+            <RequireAuth role="employer">
+              <ClientJobsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/jobs"
+          element={
+            <RequireAuth role="employer">
+              <ClientJobsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/checkout/:jobId"
+          element={
+            <RequireAuth role="employer">
+              <CheckoutPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/supervisor"
+          element={
+            <RequireAuth role="supervisor">
+              <SupervisorPage />
+            </RequireAuth>
+          }
+        />
+        <Route path="/supervisor/verify" element={<SupervisorVerifyPage />} />
         <Route path="/ussd" element={<UssdSimulatorPage />} />
         <Route path="/report/:reportToken" element={<LenderReportPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth>
+              <AdminPage />
+            </RequireAuth>
+          }
+        />
         <Route path="/privacy" element={<LegalPage initialPolicy="privacy" />} />
         <Route path="/terms" element={<LegalPage initialPolicy="terms" />} />
         <Route path="/cookies" element={<LegalPage initialPolicy="cookies" />} />
         <Route path="/ndpa" element={<LegalPage initialPolicy="ndpa" />} />
         <Route path="/sign-in" element={<SignInPage />} />
+        <Route path="/set-pin" element={<SetPinPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <DemoSimulator />
+      <ToastViewport />
     </BrowserRouter>
   )
 }

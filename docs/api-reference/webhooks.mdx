@@ -1,0 +1,36 @@
+---
+title: "Paga & Telegram webhooks"
+description: "Inbound payment notifications from Paga Collect and bot updates from Telegram."
+api: "POST /webhooks/paga"
+---
+
+## Paga Collect webhook (`POST /webhooks/paga`)
+
+Receives payment settlement notifications from Paga, verifies the raw-body SHA-512 HMAC signature (`X-Paga-Signature` or `hash`), deduplicates on `paga_event_id`, and transitions matched jobs to `FUNDED`.
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.useproofwork.ng/webhooks/paga \
+  -H "Content-Type: application/json" \
+  -H "X-Paga-Signature: <sha512_hmac>" \
+  -d '{
+    "transactionId": "PAGA-TX-90124",
+    "referenceNumber": "PW-REF-9B1DEB4D",
+    "amount": 45000,
+    "status": "SUCCESSFUL"
+  }'
+```
+
+```json 200 OK
+{
+  "status": "success",
+  "job_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "job_status": "FUNDED",
+  "paga_event_id": "PAGA-TX-90124"
+}
+```
+</CodeGroup>
+
+## Telegram webhook (`POST /webhooks/telegram`)
+
+Receives updates from Telegram Bot API, verified against `X-Telegram-Bot-Api-Secret-Token`.

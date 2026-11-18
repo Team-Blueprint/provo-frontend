@@ -8,6 +8,7 @@ import {
   Menu,
   Search,
 } from 'reicon-react'
+import { getSession } from '@/api/session'
 import {
   allDocPages,
   docsTabs,
@@ -16,7 +17,21 @@ import {
   getDocPage,
   searchDocPages,
 } from '@/docs/docsLoader'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 import { MdxContent } from '@/docs/mdxRenderer'
+
+function methodBadgeClass(method: string) {
+  switch (method.toUpperCase()) {
+    case 'GET':
+      return 'bg-[var(--pw-success-tint)] text-[var(--pw-success)]'
+    case 'POST':
+      return 'bg-[var(--pw-primary-tint)] text-[var(--pw-primary)]'
+    case 'PATCH':
+      return 'bg-[var(--pw-warning-tint)] text-[var(--pw-warning)]'
+    default:
+      return 'bg-[var(--pw-info-tint)] text-[var(--pw-info)]'
+  }
+}
 
 export function DocsPage() {
   const params = useParams()
@@ -63,6 +78,12 @@ export function DocsPage() {
     }
   }
 
+  const session = getSession()
+  const workerHref =
+    session?.accessToken && session.user.isWorker ? '/worker' : '/sign-in?role=worker'
+  const employerHref =
+    session?.accessToken && session.user.isClient ? '/employer' : '/sign-in?role=employer'
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-[var(--pw-rule)] bg-card/90 backdrop-blur-md">
@@ -83,10 +104,7 @@ export function DocsPage() {
 
             <div className="flex items-center gap-2">
               <Link to="/" className="flex items-center gap-2 font-bold tracking-tight text-foreground hover:opacity-80 transition-opacity">
-                <span
-                  className="inline-block h-3.5 w-3.5 rounded-[4px] bg-[var(--pw-brick)]"
-                  aria-hidden="true"
-                />
+                <ProvoMark className="h-5 w-5" />
                 <span>Provo</span>
               </Link>
               <Link
@@ -122,16 +140,16 @@ export function DocsPage() {
               <Search className="h-4 w-4" aria-hidden="true" />
             </button>
             <Link
-              to="/worker"
+              to={workerHref}
               className="hidden md:inline-block text-muted-foreground hover:text-foreground transition-colors"
             >
               Worker Demo
             </Link>
             <Link
-              to="/client"
+              to={employerHref}
               className="hidden md:inline-block text-muted-foreground hover:text-foreground transition-colors"
             >
-              Client Portal
+              Employer Portal
             </Link>
             <Link
               to="/"
@@ -195,6 +213,13 @@ export function DocsPage() {
                           }`}
                         >
                           <span className="truncate">{target?.title || slug}</span>
+                          {target?.api && (
+                            <span
+                              className={`ml-2 shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] font-bold ${methodBadgeClass(target.api.split(' ')[0])}`}
+                            >
+                              {target.api.split(' ')[0]}
+                            </span>
+                          )}
                         </Link>
                       </li>
                     )
@@ -216,6 +241,16 @@ export function DocsPage() {
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               {page.title}
             </h1>
+            {page.api && (
+              <div className="mt-3 inline-flex items-center gap-2.5 rounded-[var(--pw-radius-sm)] border border-[var(--pw-rule)] bg-card px-3 py-1.5 font-mono text-xs">
+                <span
+                  className={`rounded px-1.5 py-0.5 font-bold ${methodBadgeClass(page.api.split(' ')[0])}`}
+                >
+                  {page.api.split(' ')[0]}
+                </span>
+                <span className="text-foreground">{page.api.split(' ').slice(1).join(' ')}</span>
+              </div>
+            )}
             {page.description && (
               <p className="mt-3 text-base leading-7 text-muted-foreground">
                 {page.description}

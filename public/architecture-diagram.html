@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Provo System Architecture</title>
+  <style>
+    :root {
+      --bg: #FAF9F7;
+      --surface: #FFFFFF;
+      --ink: #0F172A;
+      --muted: #475569;
+      --rule: #E2E8F0;
+      --primary: #003170;
+      --primary-tint: #EFF6FF;
+      --brick: #FF8C00;
+      --success: #1E7B4B;
+      --info: #2B5BA8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Instrument Sans", Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 28px 20px 48px;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.02em; }
+    .sub { margin: 0; color: var(--muted); font-size: 14px; }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--rule);
+      background: var(--surface);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .back:hover { border-color: var(--primary); color: var(--primary); }
+    .canvas-card {
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .svg-wrap { overflow-x: auto; padding: 18px; }
+    svg { width: 100%; min-width: 820px; height: auto; display: block; }
+    .node { cursor: pointer; }
+    .node rect.box { transition: stroke-width 120ms ease, fill 120ms ease; }
+    .inspector {
+      border-top: 1px solid var(--rule);
+      background: var(--primary-tint);
+      padding: 14px 20px;
+      font-size: 14px;
+    }
+    .inspector strong { color: var(--primary); }
+    .cards {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+    .card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1>Provo System Architecture</h1>
+        <p class="sub">Click any component to inspect how channels, FastAPI, domain rules, and PagaEngine connect.</p>
+      </div>
+      <a class="back" href="/docs/architecture/overview">← Back to Docs</a>
+    </div>
+
+    <div class="canvas-card">
+      <div class="svg-wrap">
+        <svg viewBox="0 0 1010 510" role="img" aria-label="Provo System Architecture">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748B" />
+            </marker>
+            <marker id="arrow-primary" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#003170" />
+            </marker>
+          </defs>
+
+          <!-- Backend boundary -->
+          <rect x="264" y="24" width="722" height="462" rx="16" fill="#F8FAFC" stroke="#CBD5E1" stroke-dasharray="6 4" />
+          <text x="282" y="46" font-size="11" font-weight="700" fill="#475569" letter-spacing="0.06em">PROVO BACKEND (FASTAPI)</text>
+
+          <!-- Connections -->
+          <line x1="196" y1="263" x2="290" y2="263" stroke="#003170" stroke-width="2" marker-end="url(#arrow-primary)" />
+          <text x="243" y="254" text-anchor="middle" font-size="11" fill="#003170" font-weight="600">HTTPS</text>
+
+          <path d="M 196 92 L 470 92 L 470 175 L 618 175 L 618 230" fill="none" stroke="#2B5BA8" stroke-width="1.6" marker-end="url(#arrow)" />
+          <text x="338" y="83" text-anchor="middle" font-size="11" fill="#2B5BA8">GET /reports/{token}</text>
+
+          <line x1="436" y1="263" x2="540" y2="263" stroke="#64748B" stroke-width="1.6" marker-end="url(#arrow)" />
+          <text x="488" y="254" text-anchor="middle" font-size="11" fill="#475569">REST + JWT</text>
+
+          <line x1="618" y1="124" x2="618" y2="230" stroke="#2B5BA8" stroke-width="1.6" marker-end="url(#arrow)" />
+          <text x="676" y="182" font-size="11" fill="#2B5BA8">verify PIN / OTP</text>
+
+          <line x1="696" y1="263" x2="800" y2="263" stroke="#64748B" stroke-width="1.6" marker-end="url(#arrow)" />
+          <text x="748" y="254" text-anchor="middle" font-size="11" fill="#475569">validate &amp; score</text>
+
+          <line x1="881" y1="296" x2="881" y2="400" stroke="#64748B" stroke-width="1.6" marker-end="url(#arrow)" />
+          <text x="928" y="352" font-size="11" fill="#475569">atomic write</text>
+
+          <line x1="696" y1="433" x2="800" y2="433" stroke="#64748B" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#arrow)" />
+          <text x="748" y="424" text-anchor="middle" font-size="11" fill="#475569">poll 24h due</text>
+
+          <line x1="540" y1="433" x2="446" y2="433" stroke="#1E7B4B" stroke-width="2" marker-end="url(#arrow)" />
+          <text x="493" y="424" text-anchor="middle" font-size="11" fill="#1E7B4B" font-weight="600">disburse pay</text>
+
+          <path d="M 368 400 L 368 345 L 618 345 L 618 296" fill="none" stroke="#2B5BA8" stroke-width="1.6" marker-end="url(#arrow)" />
+          <text x="493" y="336" text-anchor="middle" font-size="11" fill="#2B5BA8">HMAC webhook</text>
+
+          <!-- Nodes -->
+          <g class="node" data-title="Workers & Employers" data-desc="Interact through the React web app, Telegram bot, or *123# USSD simulator.">
+            <rect class="box" x="40" y="230" width="156" height="66" rx="10" fill="#FFFFFF" stroke="#003170" stroke-width="1.8" />
+            <text x="54" y="258" font-size="13" font-weight="700" fill="#0F172A">Workers &amp; Employers</text>
+            <text x="54" y="278" font-size="11" fill="#475569">Web, Telegram, USSD (*123#)</text>
+          </g>
+
+          <g class="node" data-title="Lenders" data-desc="Open worker-approved links (/report/:token) to inspect 0–100 scores and masked employer histories.">
+            <rect class="box" x="40" y="60" width="156" height="64" rx="10" fill="#FFFFFF" stroke="#2B5BA8" stroke-width="1.6" />
+            <text x="54" y="88" font-size="13" font-weight="700" fill="#0F172A">Lenders</text>
+            <text x="54" y="106" font-size="11" fill="#475569">Report link /report/:token</text>
+          </g>
+
+          <g class="node" data-title="React Web App" data-desc="Vite + React workspaces for Workers, Employers, Supervisors, Lender Reports, and Docs.">
+            <rect class="box" x="290" y="230" width="146" height="66" rx="10" fill="#FFFFFF" stroke="#003170" stroke-width="1.6" />
+            <text x="304" y="258" font-size="13" font-weight="700" fill="#0F172A">React Web App</text>
+            <text x="304" y="278" font-size="11" fill="#475569">Vite + Provo UI</text>
+          </g>
+
+          <g class="node" data-title="FastAPI Server" data-desc="Serves REST endpoints for auth, jobs, daily decisions, USSD, sandbox deposits, and reports.">
+            <rect class="box" x="540" y="230" width="156" height="66" rx="10" fill="#FFFFFF" stroke="#003170" stroke-width="1.8" />
+            <text x="554" y="258" font-size="13" font-weight="700" fill="#0F172A">FastAPI Server</text>
+            <text x="554" y="278" font-size="11" fill="#475569">Auth, Jobs, USSD, Reports</text>
+          </g>
+
+          <g class="node" data-title="PIN & OTP Auth" data-desc="Phone + 6-digit PIN login, SMS OTP signup, and Telegram PIN setup (/auth/set-pin).">
+            <rect class="box" x="540" y="60" width="156" height="64" rx="10" fill="#FFFFFF" stroke="#2B5BA8" stroke-width="1.6" />
+            <text x="554" y="88" font-size="13" font-weight="700" fill="#0F172A">PIN &amp; OTP Auth</text>
+            <text x="554" y="106" font-size="11" fill="#475569">6-digit PIN + JWT</text>
+          </g>
+
+          <g class="node" data-title="Domain Rules" data-desc="Pure Python rules for job/day states, exact kobo splits, and fraud checks.">
+            <rect class="box" x="800" y="230" width="162" height="66" rx="10" fill="#FFFFFF" stroke="#FF8C00" stroke-width="1.8" />
+            <text x="814" y="258" font-size="13" font-weight="700" fill="#0F172A">Domain Rules</text>
+            <text x="814" y="278" font-size="11" fill="#475569">State machine &amp; Fraud</text>
+          </g>
+
+          <g class="node" data-title="Database & Ledger" data-desc="Stores jobs, daily schedules, ledger entries, consents, and append-only audit logs.">
+            <rect class="box" x="800" y="400" width="162" height="66" rx="10" fill="#FFFFFF" stroke="#003170" stroke-width="1.6" />
+            <text x="814" y="428" font-size="13" font-weight="700" fill="#0F172A">Database &amp; Ledger</text>
+            <text x="814" y="448" font-size="11" fill="#475569">Jobs, Days, Audit Log</text>
+          </g>
+
+          <g class="node" data-title="24h Timer & Payouts" data-desc="Auto-releases uncontested days after 24 hours and processes the guaranteed payout queue.">
+            <rect class="box" x="540" y="400" width="156" height="66" rx="10" fill="#FFFFFF" stroke="#1E7B4B" stroke-width="1.6" />
+            <text x="554" y="428" font-size="13" font-weight="700" fill="#0F172A">24h Timer &amp; Payouts</text>
+            <text x="554" y="448" font-size="11" fill="#475569">Auto-release + Outbox</text>
+          </g>
+
+          <g class="node" data-title="PagaEngine" data-desc="Issues one-time 10-digit bank account numbers for job funding and sends daily worker payouts.">
+            <rect class="box" x="290" y="400" width="156" height="66" rx="10" fill="#FFFFFF" stroke="#1E7B4B" stroke-width="1.8" />
+            <text x="304" y="428" font-size="13" font-weight="700" fill="#0F172A">PagaEngine</text>
+            <text x="304" y="448" font-size="11" fill="#475569">10-digit NUBAN + Payouts</text>
+          </g>
+        </svg>
+      </div>
+      <div class="inspector" id="inspector">
+        <strong>FastAPI Server:</strong> Serves REST endpoints for auth, jobs, daily decisions, USSD, sandbox deposits, and reports.
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h3><span class="dot" style="background:#003170"></span>Channels &amp; Auth</h3>
+        <ul>
+          <li>Web app, Telegram bot, and USSD (*123#) share one backend.</li>
+          <li>Phone + 6-digit PIN login and SMS OTP signup.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="dot" style="background:#1E7B4B"></span>Money &amp; Payouts</h3>
+        <ul>
+          <li>One-time 10-digit Paga NUBAN per job.</li>
+          <li>24-hour auto-release timer and retryable payout queue.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="dot" style="background:#FF8C00"></span>Trust &amp; Lending</h3>
+        <ul>
+          <li>Verified work signals (confirmed days, active months, repeat employers).</li>
+          <li>Consent-gated lender reports with masked employer IDs.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <script>
+    const inspector = document.getElementById('inspector');
+    for (const node of document.querySelectorAll('.node')) {
+      node.addEventListener('click', () => {
+        inspector.innerHTML = '<strong>' + node.dataset.title + ':</strong> ' + node.dataset.desc;
+      });
+    }
+  </script>
+</body>
+</html>

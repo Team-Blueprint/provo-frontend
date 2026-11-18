@@ -13,6 +13,7 @@ interface GradeBadgeProps {
 export function GradeBadge({ outcome, size = 'md', showHelp = false }: GradeBadgeProps) {
   const [openHelp, setOpenHelp] = useState(false)
   const copy = messages.outcomes[outcome]
+  if (!copy) return null
 
   const styles: Record<ConfirmationOutcome, string> = {
     client: 'bg-[var(--pw-grade-1)] text-primary-foreground border border-transparent',

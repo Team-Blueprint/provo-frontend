@@ -1,6 +1,6 @@
 ---
-title: "Webhooks & admin operations"
-description: "Inbound Paga and Telegram webhooks plus admin dispute resolution."
+title: "Webhooks, USSD, sandbox & admin"
+description: "Inbound Paga and Telegram webhooks, USSD simulator endpoints, sandbox deposit trigger, and admin operations."
 ---
 
 ## Paga webhook (`POST /webhooks/paga`)
@@ -15,10 +15,26 @@ Ingests Paga Collect payment callbacks.
 
 Ingests updates from the Telegram Bot API, validated by `X-Telegram-Bot-Api-Secret-Token`.
 
-## Admin dispute resolution (`POST /admin/disputes/{dispute_id}/resolve`)
+## USSD simulator (`/ussd`)
 
-Requires `is_admin = true`. Resolves a frozen `OPEN` dispute with one of three actions while enforcing the ledger balance invariant:
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `GET` | `/ussd/balance` | Fetch worker's settled and pending balance by phone |
+| `GET` | `/ussd/pending-jobs` | List funded jobs awaiting daily completion |
+| `POST` | `/ussd/report-done` | Mark a work day done from a USSD session |
+| `POST` | `/ussd/withdraw` | Trigger withdrawal to the worker's Paga payout account |
+| `POST` | `/ussd` | Interactive USSD gateway menu handler (`*123#`) |
 
-- `RELEASE_TO_WORKER`: Marks day `PAID`, writes `RELEASED` ledger entry, and enqueues outbox payout.
-- `REFUND_TO_CLIENT`: Writes `REFUNDED` ledger entry for the disputed day.
-- `SPLIT`: Splits the disputed day's `amount_kobo` between worker payout and client refund.
+## Sandbox simulator (`POST /sandbox/simulate-deposit`)
+
+Simulates an inbound Paga Collect bank transfer for an `AWAITING_FUNDING` job in sandbox/demo environments.
+
+## Admin operations (`/admin`)
+
+Requires `is_admin = true`.
+
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `GET` | `/admin/disputes` | List open and resolved day disputes |
+| `GET` | `/admin/outbox` | Inspect outbox payout queue and settlement attempts |
+| `POST` | `/admin/disputes/{dispute_id}/resolve` | Resolve an `OPEN` dispute (`RELEASE_TO_WORKER`, `REFUND_TO_CLIENT`, or `SPLIT`) |

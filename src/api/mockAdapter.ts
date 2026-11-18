@@ -94,6 +94,19 @@ function computeDailySchedule(totalKobo: number, daysCount: number): JobDay[] {
   }))
 }
 
+function maskEmployerName(name: string, token: string): string {
+  const clean = name.trim()
+  if (!clean || clean.includes('***')) return clean || `Employer (#${token})`
+  const masked = clean
+    .split(/\s+/)
+    .map((part) => {
+      if (part.length <= 2) return `${part[0]}*`
+      return `${part[0]}${'*'.repeat(Math.min(3, part.length - 2))}${part[part.length - 1]}`
+    })
+    .join(' ')
+  return token && !clean.includes(token) ? `${masked} (#${token})` : masked
+}
+
 function computeReport(state: DemoState, reportToken: string): ReportPayload {
   const consent =
     state.consents.find((c) => c.reportToken === reportToken && !c.revokedAt) ??
@@ -241,15 +254,20 @@ function computeReport(state: DemoState, reportToken: string): ReportPayload {
   })
 
   const clientTokens: ClientTokenSummary[] = Array.from(clientStats.entries()).map(
-    ([token, info]) => ({
-      token,
-      displayLabel: `Employer ${token}`,
-      phoneVerified: true,
-      confirmedDays: info.confirmedDays,
-      autoReleasedDays: info.autoDays,
-      monthsActive: clientMonths.get(token)?.size ?? 1,
-      totalNaira: info.totalNaira,
-    }),
+    ([token, info]) => {
+      const sampleJob = state.jobs.find((j) => j.clientToken === token)
+      return {
+        token,
+        displayLabel: sampleJob
+          ? maskEmployerName(sampleJob.clientName, token)
+          : `Employer (#${token})`,
+        phoneVerified: true,
+        confirmedDays: info.confirmedDays,
+        autoReleasedDays: info.autoDays,
+        monthsActive: clientMonths.get(token)?.size ?? 1,
+        totalNaira: info.totalNaira,
+      }
+    },
   )
 
   return {
@@ -337,12 +355,52 @@ export const mockAdapter = {
         ...j,
         supervisorName: input.supervisorName.trim() || undefined,
         supervisorPhone: input.supervisorPhone.trim() || undefined,
+        supervisorToken: j.supervisorToken ?? `sup_${j.id}`,
       }
       return updated
     })
     saveState(state)
     window.dispatchEvent(new CustomEvent('proofwork:demo-updated'))
     return updated
+  },
+
+  async getSupervisorJobView(jobId: string, _token: string): Promise<EscrowJob> {
+    const job = loadState().jobs.find((j) => j.id === jobId)
+    if (!job) throw new Error('Invalid or expired supervisor link')
+    return job
+  },
+
+  async supervisorConfirmDay(input: {
+    jobId: string
+    dayNumber: number
+    token: string
+    proofPhoto?: string
+    phone?: string
+  }): Promise<void> {
+    await this.confirmDay(input.jobId, input.dayNumber, 'supervisor')
+    if (input.proofPhoto) {
+      const state = loadState()
+      state.jobs = state.jobs.map((j) =>
+        j.id === input.jobId
+          ? {
+              ...j,
+              days: j.days.map((d) =>
+                d.dayNumber === input.dayNumber ? { ...d, proofPhoto: input.proofPhoto } : d,
+              ),
+            }
+          : j,
+      )
+      saveState(state)
+    }
+  },
+
+  async supervisorDisputeDay(input: {
+    jobId: string
+    dayNumber: number
+    token: string
+    reason: DisputeReason
+  }): Promise<void> {
+    await this.disputeDay(input.jobId, input.dayNumber, input.reason, 'supervisor')
   },
 
   async createAndRequestFunding(input: {
@@ -401,7 +459,7 @@ export const mockAdapter = {
       workerName: w.name,
       accountNumber: w.pagaAccountNumber,
       bank: 'Paga',
-      paymentUrl: `${window.location.origin}/client?worker=${w.id}`,
+      paymentUrl: `${window.location.origin}/employer?worker=${w.id}`,
       shareText: `Pay ${w.name} via Provo: Transfer to Paga account ${w.pagaAccountNumber}`,
     }
   },
@@ -644,6 +702,52 @@ export const mockAdapter = {
     saveState(state)
   },
 
+  async assignWorkerToJob(input: {
+    jobId: string
+    workerPhone?: string
+    workerId?: string
+  }): Promise<EscrowJob> {
+    const state = loadState()
+    const matched = state.directory.find(
+      (w) =>
+        (input.workerId && w.id === input.workerId) ||
+        (input.workerPhone &&
+          w.phone.replace(/\D/g, '').endsWith(input.workerPhone.replace(/\D/g, '').slice(-10))),
+    )
+    let updated: EscrowJob | null = null
+    state.jobs = state.jobs.map((j) => {
+      if (j.id !== input.jobId) return j
+      updated = {
+        ...j,
+        workerId: matched?.id ?? input.workerId ?? 'wrk_assigned',
+        workerName: matched?.name ?? input.workerPhone ?? j.workerName,
+      }
+      return updated
+    })
+    saveState(state)
+    if (!updated) throw new Error('Job not found')
+    return updated
+  },
+
+  async requestSetPin(_phone: string): Promise<{ message: string }> {
+    return { message: 'PIN setup OTP sent via SMS.' }
+  },
+
+  async setPin(_input: {
+    phone: string
+    otpCode: string
+    newPin: string
+  }): Promise<{ isWorker: boolean; isClient: boolean }> {
+    return { isWorker: true, isClient: false }
+  },
+
+  async loginWithPin(input: { phone: string; pin: string }) {
+    if (!/^\d{6}$/.test(input.pin.trim())) {
+      throw new Error('Enter your 6-digit PIN.')
+    }
+    return this.verifyWorkerLogin({ phone: input.phone, otp: '123456' })
+  },
+
   async sendWorkerOtp(phone: string) {
     const cleaned = phone.trim()
     if (!cleaned) {
@@ -655,6 +759,7 @@ export const mockAdapter = {
   async sendSignupOtp(input: {
     name: string
     phone: string
+    pin: string
     role: 'worker' | 'client'
     trade?: TradeType
   }) {
@@ -663,6 +768,95 @@ export const mockAdapter = {
       throw new Error('Enter a valid phone number.')
     }
     return { sent: true, demoCode: '123456', phone: cleaned }
+  },
+
+  async getUssdBalance(phone: string) {
+    const dash = await this.getWorkerDashboard()
+    const paidKobo = dash.jobs
+      .flatMap((j) => j.days)
+      .filter((d) => d.status === 'PAID' || d.status === 'CONFIRMED')
+      .reduce((acc, d) => acc + d.amountKobo, 0)
+    return {
+      phone,
+      workerName: dash.worker.name,
+      trade: dash.worker.trade,
+      totalEarnedKobo: paidKobo,
+      totalEarnedNaira: `${(paidKobo / 100).toLocaleString('en-NG')}`,
+      availableBalanceKobo: paidKobo,
+      availableBalanceNaira: `${(paidKobo / 100).toLocaleString('en-NG')}`,
+      pagaAccountNumber: dash.worker.pagaAccountNumber,
+      displayText: `${dash.worker.name} (${dash.worker.trade})\nEarned: ₦${(paidKobo / 100).toLocaleString('en-NG')}`,
+    }
+  },
+
+  async getUssdPendingJobs(phone: string) {
+    const dash = await this.getWorkerDashboard()
+    const pending = dash.jobs
+      .filter((j) => j.status === 'FUNDED' || j.status === 'IN_PROGRESS')
+      .map((j) => {
+        const nextDay = j.days.find((d) => d.status === 'PENDING' || d.status === 'DONE_REPORTED')
+        return {
+          jobId: j.id,
+          trade: j.trade,
+          description: j.description,
+          totalNaira: `${Math.round(j.totalKobo / 100)}`,
+          currentDay: nextDay?.dayNumber ?? 1,
+          totalDays: j.daysCount,
+          dayStatus: nextDay?.status ?? 'PENDING',
+        }
+      })
+    return {
+      phone,
+      totalPendingJobs: pending.length,
+      jobs: pending,
+      displayText: `${pending.length} active job(s)`,
+    }
+  },
+
+  async ussdReportDone(_phone: string, jobId: string) {
+    const dash = await this.getWorkerDashboard()
+    const job = dash.jobs.find((j) => j.id === jobId)
+    const pendingDay = job?.days.find((d) => d.status === 'PENDING')
+    if (job && pendingDay) {
+      await this.markDayDone(job.id, pendingDay.dayNumber)
+      return { displayText: `Day ${pendingDay.dayNumber} marked DONE. 24h window started.` }
+    }
+    return { displayText: 'No pending day found for this job.' }
+  },
+
+  async ussdRegister(input: {
+    phone: string
+    name: string
+    trade: TradeType
+    pin: string
+  }) {
+    const state = loadState()
+    const newWorker: Worker = {
+      ...state.worker,
+      id: `wrk_${Date.now().toString().slice(-4)}`,
+      slug: input.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      name: input.name.trim(),
+      phone: input.phone.trim(),
+      trade: input.trade,
+      available: true,
+    }
+    state.worker = newWorker
+    state.directory = [newWorker, ...state.directory]
+    saveState(state)
+    return { message: `Account created for ${input.name}.` }
+  },
+
+  async ussdWithdraw(
+    _phone: string,
+    _amountNaira?: number,
+    options?: { accountNumber?: string; bankCode?: string; pin?: string },
+  ) {
+    const dash = await this.getWorkerDashboard()
+    const destAccount = options?.accountNumber || dash.worker.pagaAccountNumber
+    const destBank = options?.bankCode || 'Paga'
+    return {
+      displayText: `Withdrawal queued to ${destBank} (${destAccount}).`,
+    }
   },
 
   async resendOtp(phone: string) {

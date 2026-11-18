@@ -1,22 +1,23 @@
 ---
 title: "System architecture"
-description: "Clean layered architecture: pure domain rules, transactional services, Paga rails, and React frontend."
+description: "How Provo's channels, API server, business rules, and Paga payment rails fit together."
 ---
 
-The Provo backend is built in **Python 3.12** with **FastAPI**, **Pydantic v2**, and **SQLAlchemy 2.0** (async) backed by PostgreSQL / SQLite and Alembic migrations.
+Provo separates user channels, business rules, and payment integrations into clean layers so every rule is easy to test and verify.
 
-## Repository layout
+<ArchitectureDiagram />
 
-| Layer | Directory | Responsibility |
+## How the parts work together
+
+| Layer | Folder | What it does |
 | :--- | :--- | :--- |
-| **Domain** | `app/domain/` | Pure Python with zero DB or network calls: `lifecycle.py`, `ledger.py`, `scoring.py`, `fraud.py`. |
-| **Services** | `app/services/` | Transactional use cases (`job_service`, `funding_service`, `release_service`, `report_service`, `auth_service`). |
-| **Integrations** | `app/integrations/` | `PagaClient` (real + simulated adapter behind one interface), `aiogram` Telegram bot, SMS gateway. |
-| **API** | `app/api/` | FastAPI routers for `auth`, `jobs`, `workers`, `reports`, `webhooks`, and `admin`. |
-| **Workers** | `app/workers/` | Background scheduler (`SELECT ... FOR UPDATE SKIP LOCKED` for 24h auto-release) and outbox payout worker. |
-| **Frontend** | `frontend/src/` | React 19 + TypeScript + Vite + Tailwind CSS v4 + `reicon-react` + `proofwork-tokens.css`. |
+| **Channels** | `frontend/src/` & `app/integrations/` | Web workspaces, Telegram bot, and USSD (`*123#`) menu for workers, employers, and supervisors. |
+| **API & Webhooks** | `app/api/` | FastAPI routes for phone + PIN login, jobs, daily decisions, lender reports, and incoming payment alerts. |
+| **Core Rules** | `app/domain/` | Pure Python rules with no database or network calls: job/day status rules, money math, scoring, and fraud checks. |
+| **Services** | `app/services/` | Runs each action (like creating a job or confirming a day) inside a single database transaction so partial updates cannot happen. |
+| **Background Workers** | `app/workers/` | Checks for 24-hour expired days to auto-release and sends queued payouts to Paga with safe retries. |
 
-## Swappable data & integration adapters
+## Testable adapters
 
-- **Backend Paga adapter:** Live Paga Collect / Business REST client and a deterministic fake client share the exact same interface so end-to-end tests and offline demos run identically.
-- **Frontend API mode:** `src/api/client.ts` switches cleanly between `mockAdapter.ts` (seeded Emem Ekpo data in `localStorage`) and `httpAdapter.ts` (`VITE_API_BASE_URL`) via `VITE_API_MODE=live`.
+- **Paga adapter:** Live Paga payment calls and a simulated test adapter sit behind the same interface so demos and automated tests run reliably.
+- **Frontend API mode:** `src/api/client.ts` switches between local demo data (`mockAdapter.ts`) and the live FastAPI server (`httpAdapter.ts`) using `VITE_API_MODE`.

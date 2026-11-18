@@ -24,13 +24,15 @@ export function ClientJobsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
+  const [assignPhoneByJob, setAssignPhoneByJob] = useState<Record<string, string>>({})
+  const [assigningJobId, setAssigningJobId] = useState<string | null>(null)
   const [disputeTarget, setDisputeTarget] = useState<{ jobId: string; dayNumber: number } | null>(
     null,
   )
 
   async function load() {
-    const [dash, dir] = await Promise.all([api.getWorkerDashboard(), api.getAvailableWorkers()])
-    setJobs(dash.jobs)
+    const [clientJobs, dir] = await Promise.all([api.getClientJobs(), api.getAvailableWorkers()])
+    setJobs(clientJobs)
     setWorkers(dir)
   }
 
@@ -202,6 +204,57 @@ export function ClientJobsPage() {
 
               {expanded && (
                 <div className="border-t border-border px-5 py-4 space-y-4">
+                  {!job.workerId && (
+                    <div className="rounded-[var(--pw-radius-md)] border border-border bg-muted/40 p-4 flex flex-wrap items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-semibold text-foreground">
+                          No artisan assigned yet
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Enter the artisan’s Nigerian phone number to assign them to this job.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          placeholder="08123456780"
+                          value={assignPhoneByJob[job.id] ?? ''}
+                          onChange={(e) =>
+                            setAssignPhoneByJob((prev) => ({
+                              ...prev,
+                              [job.id]: e.target.value,
+                            }))
+                          }
+                          className="rounded-[var(--pw-radius-sm)] border border-input bg-card px-3 py-1.5 font-mono text-xs text-foreground"
+                        />
+                        <Button
+                          size="sm"
+                          disabled={assigningJobId === job.id}
+                          onClick={async () => {
+                            const rawPhone = (assignPhoneByJob[job.id] ?? '').trim()
+                            if (!rawPhone) return
+                            setAssigningJobId(job.id)
+                            try {
+                              await api.assignWorkerToJob({
+                                jobId: job.id,
+                                workerPhone: rawPhone,
+                              })
+                              setNotice('Artisan assigned to job.')
+                              await load()
+                            } finally {
+                              setAssigningJobId(null)
+                            }
+                          }}
+                        >
+                          <span>
+                            {assigningJobId === job.id ? 'Assigning...' : 'Assign artisan'}
+                          </span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {job.status === 'AWAITING_FUNDING' && (
                     <div className="rounded-[var(--pw-radius-md)] border border-[var(--pw-warning)]/30 bg-[var(--pw-warning-tint)] p-4 flex flex-wrap items-center justify-between gap-3">
                       <div className="space-y-0.5">
@@ -246,6 +299,22 @@ export function ClientJobsPage() {
                           <AmountText amount={Math.round(day.amountKobo / 100)} size="sm" />
                           <StatusPill status={day.status} />
                           {day.outcome && <GradeBadge outcome={day.outcome} size="sm" />}
+                          {day.proofPhoto && (
+                            <a
+                              href={day.proofPhoto}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={`View Day ${day.dayNumber} proof photo`}
+                              className="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-foreground hover:border-primary"
+                            >
+                              <img
+                                src={day.proofPhoto}
+                                alt={`Day ${day.dayNumber} proof`}
+                                className="h-5 w-7 rounded-[3px] object-cover"
+                              />
+                              <span>Proof photo</span>
+                            </a>
+                          )}
                         </div>
 
                         {day.status === 'DONE_REPORTED' && (

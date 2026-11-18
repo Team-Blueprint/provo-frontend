@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 
 export function SiteFooter() {
   const [email, setEmail] = useState('')
@@ -11,10 +12,7 @@ export function SiteFooter() {
         <div className="grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-4 space-y-4">
             <Link to="/" className="flex items-center gap-2 font-semibold text-background">
-              <span
-                className="inline-block h-3 w-3 rounded-[3px] bg-[var(--pw-brick)]"
-                aria-hidden="true"
-              />
+              <ProvoMark className="h-5 w-5" />
               <span>Provo</span>
             </Link>
             <p className="text-xs text-background/70 max-w-xs">
@@ -60,7 +58,7 @@ export function SiteFooter() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/client" className="hover:text-background">
+                  <Link to="/employer" className="hover:text-background">
                     Employer portal
                   </Link>
                 </li>

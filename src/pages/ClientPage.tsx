@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowRight,
+  Briefcase,
   CheckCircle,
   Plus,
 } from 'reicon-react'
@@ -12,13 +13,16 @@ import { AmountText } from '@/components/pw/AmountText'
 import { DisputeDialog } from '@/components/pw/DisputeDialog'
 import { EmployerNewJobModal } from '@/components/pw/EmployerNewJobModal'
 import { EmployerShell } from '@/components/pw/EmployerShell'
+import { EmptyState } from '@/components/pw/EmptyState'
 import { EscrowCheckoutCard } from '@/components/pw/EscrowCheckoutCard'
 import { JobTypePicker } from '@/components/pw/JobTypePicker'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 import { StatusPill } from '@/components/pw/StatusPill'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, Skeleton } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { toast } from '@/components/ui/toast'
 
 export function ClientPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -27,6 +31,7 @@ export function ClientPage() {
   const invitedDays = searchParams.get('days')
   const invitedDesc = searchParams.get('desc')
 
+  const [loading, setLoading] = useState(true)
   const [jobs, setJobs] = useState<EscrowJob[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
   const [search, setSearch] = useState('')
@@ -55,19 +60,25 @@ export function ClientPage() {
   )
 
   async function load() {
-    const [clientJobs, dir] = await Promise.all([api.getClientJobs(), api.getAvailableWorkers()])
-    setJobs(clientJobs)
-    setWorkers(dir)
-    if (invitedWorkerId) {
-      const matched = dir.find((w) => w.id === invitedWorkerId)
-      if (matched) {
-        setWorkerId(matched.id)
-        setTrade(matched.trade)
+    try {
+      const [clientJobs, dir] = await Promise.all([api.getClientJobs(), api.getAvailableWorkers()])
+      setJobs(clientJobs)
+      setWorkers(dir)
+      if (invitedWorkerId) {
+        const matched = dir.find((w) => w.id === invitedWorkerId)
+        if (matched) {
+          setWorkerId(matched.id)
+          setTrade(matched.trade)
+        }
       }
-    }
-    if (checkoutJob) {
-      const updated = clientJobs.find((j) => j.id === checkoutJob.id)
-      if (updated) setCheckoutJob(updated)
+      if (checkoutJob) {
+        const updated = clientJobs.find((j) => j.id === checkoutJob.id)
+        if (updated) setCheckoutJob(updated)
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not load employer dashboard.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -155,6 +166,28 @@ export function ClientPage() {
     job.days
       .filter((day) => day.status === 'DONE_REPORTED')
       .map((day) => ({ job, day })),
+  )
+
+  const settledDays = jobs
+    .flatMap((j) => j.days)
+    .filter((d) => d.status === 'PAID' || d.status === 'CONFIRMED' || d.status === 'AUTO_RELEASED')
+  const totalPaidOutNaira = Math.round(
+    settledDays.reduce((sum, d) => sum + d.amountKobo, 0) / 100,
+  )
+
+  const activeFundedJobs = jobs.filter(
+    (j) => j.status === 'FUNDED' || j.status === 'IN_PROGRESS',
+  )
+  const lockedInPagaNaira = Math.round(
+    activeFundedJobs
+      .flatMap((j) => j.days)
+      .filter((d) => d.status === 'PENDING' || d.status === 'DONE_REPORTED')
+      .reduce((sum, d) => sum + d.amountKobo, 0) / 100,
+  )
+
+  const unfundedJobs = jobs.filter((j) => j.status === 'AWAITING_FUNDING')
+  const awaitingFundingNaira = Math.round(
+    unfundedJobs.reduce((sum, j) => sum + j.totalKobo, 0) / 100,
   )
 
   const filteredJobs = jobs.filter((j) =>
@@ -373,10 +406,7 @@ export function ClientPage() {
         <header className="sticky top-0 z-20 border-b border-border bg-card">
           <div className="mx-auto flex max-w-3xl items-center justify-between px-4 sm:px-6 py-3.5">
             <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-[3px] bg-[var(--pw-brick)]"
-                aria-hidden="true"
-              />
+              <ProvoMark className="h-5 w-5" />
               <span>Provo</span>
             </Link>
             <button
@@ -429,6 +459,50 @@ export function ClientPage() {
         </Button>
       </div>
 
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <Card key={i} className="p-5 space-y-3">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card className="p-5 flex flex-col justify-between gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Total Paid Out</span>
+            <p className="text-2xl sm:text-3xl font-bold tabular-nums text-foreground">
+              {formatNaira(totalPaidOutNaira)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {settledDays.length} settled {settledDays.length === 1 ? 'day' : 'days'}
+            </p>
+          </Card>
+
+          <Card className="p-5 flex flex-col justify-between gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Locked in Paga</span>
+            <p className="text-2xl sm:text-3xl font-bold tabular-nums text-foreground">
+              {formatNaira(lockedInPagaNaira)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {activeFundedJobs.length} active {activeFundedJobs.length === 1 ? 'job' : 'jobs'}
+            </p>
+          </Card>
+
+          <Card className="p-5 flex flex-col justify-between gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Awaiting Funding</span>
+            <p className="text-2xl sm:text-3xl font-bold tabular-nums text-foreground">
+              {formatNaira(awaitingFundingNaira)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {unfundedJobs.length} unfunded {unfundedJobs.length === 1 ? 'NUBAN' : 'NUBANs'}
+            </p>
+          </Card>
+        </div>
+      )}
+
       {notice && (
         <div
           role="status"
@@ -451,10 +525,12 @@ export function ClientPage() {
         </div>
 
         {pendingConfirmations.length === 0 ? (
-          <Card className="p-5 text-xs text-muted-foreground">
-            No days are waiting right now. When an artisan marks a day done, it appears here for
-            one-tap confirmation.
-          </Card>
+          <EmptyState
+            icon={CheckCircle}
+            compact
+            title="All caught up"
+            description="No work days are waiting for confirmation right now. When an artisan marks a day done, it appears here for one-tap payout."
+          />
         ) : (
           <div className="space-y-3">
             {pendingConfirmations.map(({ job, day }) => {
@@ -475,6 +551,25 @@ export function ClientPage() {
                       Day {day.dayNumber} of {job.daysCount} ·{' '}
                       {formatNaira(Math.round(day.amountKobo / 100))} · {job.description}
                     </p>
+                    {day.proofPhoto && (
+                      <div className="pt-2 flex items-center gap-2.5">
+                        <a
+                          href={day.proofPhoto}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-block shrink-0"
+                        >
+                          <img
+                            src={day.proofPhoto}
+                            alt={`Day ${day.dayNumber} site proof`}
+                            className="h-14 w-20 rounded-[8px] border border-border object-cover hover:opacity-90 transition-opacity"
+                          />
+                        </a>
+                        <span className="text-[11px] font-medium text-muted-foreground">
+                          Site proof photo attached
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -514,13 +609,27 @@ export function ClientPage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-foreground">Recent active jobs</h2>
-          <Link to="/client/jobs" className="text-xs font-medium text-primary hover:underline">
+          <Link to="/employer/jobs" className="text-xs font-medium text-primary hover:underline">
             View all jobs ({jobs.length}) →
           </Link>
         </div>
 
         <div className="space-y-3">
-          {filteredJobs.slice(0, 2).map((job) => {
+          {filteredJobs.length === 0 ? (
+            <EmptyState
+              icon={Briefcase}
+              compact
+              title="No active jobs yet"
+              description="Create your first job to lock pay in Paga and assign an artisan."
+              action={
+                <Button size="sm" onClick={() => setModalOpen(true)}>
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>New job</span>
+                </Button>
+              }
+            />
+          ) : (
+            filteredJobs.slice(0, 2).map((job) => {
             const paidCount = job.days.filter(
               (d) => d.status === 'PAID' || d.status === 'CONFIRMED',
             ).length
@@ -542,7 +651,7 @@ export function ClientPage() {
                 </div>
                 <div className="flex items-center justify-between sm:justify-end gap-3">
                   <AmountText amount={Math.round(job.totalKobo / 100)} size="md" />
-                  <Link to="/client/jobs">
+                  <Link to="/employer/jobs">
                     <Button size="sm" variant="secondary">
                       Manage
                     </Button>
@@ -550,7 +659,8 @@ export function ClientPage() {
                 </div>
               </Card>
             )
-          })}
+            })
+          )}
         </div>
       </section>
 

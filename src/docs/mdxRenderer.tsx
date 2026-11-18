@@ -18,6 +18,7 @@ import {
   Warning,
 } from 'reicon-react'
 import { slugifyHeading } from '@/docs/docsLoader'
+import { ArchitectureDiagram } from '@/docs/ArchitectureDiagram'
 
 function renderIcon(name?: string) {
   const cls = 'h-4 w-4 text-[var(--pw-primary)] shrink-0'
@@ -387,6 +388,12 @@ export function MdxContent({ body }: { body: string }) {
           code={codeLines.join('\n')}
         />,
       )
+      continue
+    }
+
+    if (trimmed === '<ArchitectureDiagram />') {
+      elements.push(<ArchitectureDiagram key={key++} />)
+      i++
       continue
     }
 

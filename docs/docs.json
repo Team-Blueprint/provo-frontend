@@ -22,8 +22,8 @@
         "href": "/worker"
       },
       {
-        "label": "Client Portal",
-        "href": "/client"
+        "label": "Employer Portal",
+        "href": "/employer"
       }
     ],
     "primary": {
@@ -67,7 +67,6 @@
             "group": "For Lenders",
             "pages": [
               "lenders/overview",
-              "lenders/credibility-score",
               "lenders/signed-snapshots"
             ]
           },
@@ -106,12 +105,47 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "Endpoints",
+            "group": "Overview",
             "pages": [
               "api-reference/introduction",
-              "api-reference/jobs-and-funding",
-              "api-reference/workers-and-reports",
-              "api-reference/webhooks-and-admin"
+              "api-reference/health"
+            ]
+          },
+          {
+            "group": "Authentication",
+            "pages": [
+              "api-reference/auth-signup-login",
+              "api-reference/auth-pin-and-profile"
+            ]
+          },
+          {
+            "group": "Jobs & Daily Decisions",
+            "pages": [
+              "api-reference/jobs-create-and-list",
+              "api-reference/jobs-funding",
+              "api-reference/jobs-daily-decisions"
+            ]
+          },
+          {
+            "group": "Workers & Reports",
+            "pages": [
+              "api-reference/workers-directory",
+              "api-reference/workers-settings",
+              "api-reference/workers-shares"
+            ]
+          },
+          {
+            "group": "USSD & Sandbox",
+            "pages": [
+              "api-reference/ussd-endpoints",
+              "api-reference/sandbox-deposit"
+            ]
+          },
+          {
+            "group": "Webhooks & Admin",
+            "pages": [
+              "api-reference/webhooks",
+              "api-reference/admin"
             ]
           }
         ]

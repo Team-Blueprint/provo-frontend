@@ -1,0 +1,38 @@
+---
+title: "Health check"
+description: "Verify API uptime, active environment, and configured 24-hour auto-release window."
+api: "GET /health"
+---
+
+## Request
+
+```bash curl
+curl https://api.useproofwork.ng/health
+```
+
+## Response
+
+<ResponseField name="status" type="string">
+  Returns `"healthy"` when the API server is ready.
+</ResponseField>
+
+<ResponseField name="project" type="string">
+  Configured project name.
+</ResponseField>
+
+<ResponseField name="environment" type="string">
+  Active runtime environment (`development`, `staging`, or `production`).
+</ResponseField>
+
+<ResponseField name="escrow_window_hours" type="integer">
+  Hours before an uncontested `DONE_REPORTED` day auto-releases (default `24`).
+</ResponseField>
+
+```json 200 OK
+{
+  "status": "healthy",
+  "project": "Provo",
+  "environment": "production",
+  "escrow_window_hours": 24
+}
+```

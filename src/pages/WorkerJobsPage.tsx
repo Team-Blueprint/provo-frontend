@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
-import { AngleDown, CheckCircle } from 'reicon-react'
+import { AngleDown, Briefcase, CheckCircle } from 'reicon-react'
 import { api } from '@/api/client'
 import type { EscrowJob, JobStatus } from '@/api/types'
 import { messages } from '@/messages/en'
 import { AmountText } from '@/components/pw/AmountText'
+import { EmptyState } from '@/components/pw/EmptyState'
 import { GradeBadge } from '@/components/pw/GradeBadge'
 import { StatusPill } from '@/components/pw/StatusPill'
 import { WorkerShell } from '@/components/pw/WorkerShell'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
+import { toast } from '@/components/ui/toast'
 
 const PAGE_SIZE = 3
 
@@ -23,9 +25,14 @@ export function WorkerJobsPage() {
 
   async function load() {
     setLoading(true)
-    const data = await api.getWorkerDashboard()
-    setJobs(data.jobs)
-    setLoading(false)
+    try {
+      const data = await api.getWorkerDashboard()
+      setJobs(data.jobs)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not load job records.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -89,26 +96,67 @@ export function WorkerJobsPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <div className="p-5 flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3.5 w-60 max-w-full" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                </div>
+              </div>
+              {i === 0 && (
+                <div className="border-t border-border px-5 py-4 space-y-3">
+                  {[0, 1, 2].map((d) => (
+                    <div key={d} className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                      </div>
+                      {d === 0 && <Skeleton className="h-8 w-24 rounded-full" />}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-8 text-center space-y-3">
-          <p className="text-sm text-muted-foreground">{messages.worker.emptyJobs}</p>
-          {(filter !== 'all' || search.trim() !== '') && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                setFilter('all')
-                setSearch('')
-              }}
-            >
-              Clear filters
-            </Button>
-          )}
-        </Card>
+        <EmptyState
+          icon={Briefcase}
+          title={
+            filter !== 'all' || search.trim() !== ''
+              ? 'No matching job records'
+              : 'No job records yet'
+          }
+          description={
+            filter !== 'all' || search.trim() !== ''
+              ? 'Try clearing your status filter or search term to see all jobs.'
+              : messages.worker.emptyJobs
+          }
+          action={
+            (filter !== 'all' || search.trim() !== '') && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setFilter('all')
+                  setSearch('')
+                }}
+              >
+                Clear filters
+              </Button>
+            )
+          }
+        />
       ) : (
         <div className="space-y-4">
           {paginated.map((job) => {
@@ -167,7 +215,17 @@ export function WorkerJobsPage() {
                                 setMarkingKey(key)
                                 try {
                                   await api.markDayDone(job.id, day.dayNumber)
+                                  toast.success(
+                                    `Day ${day.dayNumber} marked Done. 24h confirmation window started.`,
+                                    `Day ${day.dayNumber} reported`,
+                                  )
                                   await load()
+                                } catch (err) {
+                                  toast.error(
+                                    err instanceof Error
+                                      ? err.message
+                                      : 'Could not mark day as done.',
+                                  )
                                 } finally {
                                   setMarkingKey(null)
                                 }

@@ -2,17 +2,21 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowUpRight,
+  Briefcase,
   Check,
   CheckCircle,
   Copy,
 } from 'reicon-react'
 import { api } from '@/api/client'
 import type { EscrowJob, ReportPayload, Worker } from '@/api/types'
-import { getTierDetails } from '@/lib/format'
+import { formatNaira, getTierDetails } from '@/lib/format'
+import { EmptyState } from '@/components/pw/EmptyState'
 import { JobLine } from '@/components/pw/JobLine'
 import { WorkerShell } from '@/components/pw/WorkerShell'
+import { WorkerWithdrawModal } from '@/components/pw/WorkerWithdrawModal'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
+import { toast } from '@/components/ui/toast'
 
 export function WorkerPage() {
   const [loading, setLoading] = useState(true)
@@ -22,14 +26,23 @@ export function WorkerPage() {
   const [copiedNuban, setCopiedNuban] = useState(false)
   const [markingKey, setMarkingKey] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
+  const [withdrawnNaira, setWithdrawnNaira] = useState(0)
 
   async function load() {
     setLoading(true)
-    const data = await api.getWorkerDashboard()
-    setWorker(data.worker)
-    setJobs(data.jobs)
-    setReportPreview(data.reportPreview)
-    setLoading(false)
+    try {
+      const data = await api.getWorkerDashboard()
+      setWorker(data.worker)
+      setJobs(data.jobs)
+      setReportPreview(data.reportPreview)
+      const saved = Number(window.localStorage.getItem(`proofwork_withdrawn_${data.worker.id}`) || '0')
+      setWithdrawnNaira(Number.isFinite(saved) ? saved : 0)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not load worker dashboard.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -40,24 +53,90 @@ export function WorkerPage() {
   }, [])
 
   const activeJobs = jobs.filter((j) => j.status === 'FUNDED' || j.status === 'IN_PROGRESS')
-  const confirmedDays = jobs
+  const settledDays = jobs
     .flatMap((j) => j.days)
-    .filter((d) => d.status === 'PAID' || d.status === 'CONFIRMED').length
+    .filter((d) => d.status === 'PAID' || d.status === 'CONFIRMED' || d.status === 'AUTO_RELEASED')
+  const confirmedDays = settledDays.length
+  const totalEarnedNaira = Math.round(
+    settledDays.reduce((sum, d) => sum + d.amountKobo, 0) / 100,
+  )
+  const pendingPayNaira = Math.round(
+    activeJobs
+      .flatMap((j) => j.days)
+      .filter((d) => d.status === 'PENDING' || d.status === 'DONE_REPORTED')
+      .reduce((sum, d) => sum + d.amountKobo, 0) / 100,
+  )
   const waitingDays = jobs
     .flatMap((j) => j.days)
     .filter((d) => d.status === 'DONE_REPORTED').length
+  const availableBalanceNaira = Math.max(0, totalEarnedNaira - withdrawnNaira)
 
   return (
     <WorkerShell jobCount={jobs.length}>
       {loading || !worker ? (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Skeleton className="h-36 w-full" />
-            <Skeleton className="h-36 w-full" />
-            <Skeleton className="h-36 w-full" />
-            <Skeleton className="h-36 w-full" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-36" />
+              <Skeleton className="h-4 w-72 max-w-full" />
+            </div>
+            <div className="flex gap-2.5">
+              <Skeleton className="h-10 w-32 rounded-full" />
+              <Skeleton className="h-10 w-36 rounded-full" />
+            </div>
           </div>
-          <Skeleton className="h-44 w-full" />
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Card key={i} className="p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-7 w-7 rounded-full" />
+                </div>
+                <Skeleton className="h-10 w-16" />
+                <Skeleton className="h-3 w-32" />
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-3.5 w-64 max-w-full" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-14" />
+              <Skeleton className="h-10 w-44 rounded-full" />
+            </div>
+          </Card>
+
+          <div className="grid gap-4 lg:grid-cols-12">
+            <Card className="lg:col-span-5 p-5 space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-3.5 w-32" />
+                </div>
+                <Skeleton className="h-8 w-24 rounded-full" />
+              </div>
+              <Skeleton className="h-14 w-full rounded-[10px]" />
+              <div className="flex justify-between pt-2 border-t border-border">
+                <Skeleton className="h-3.5 w-28" />
+                <Skeleton className="h-3.5 w-20" />
+              </div>
+            </Card>
+            <Card className="lg:col-span-7 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-5 w-28" />
+                <Skeleton className="h-3.5 w-16" />
+              </div>
+              <div className="space-y-2.5">
+                <Skeleton className="h-16 w-full rounded-[12px]" />
+                <Skeleton className="h-16 w-full rounded-[12px]" />
+                <Skeleton className="h-16 w-full rounded-[12px]" />
+              </div>
+            </Card>
+          </div>
         </div>
       ) : (
         <>
@@ -84,7 +163,7 @@ export function WorkerPage() {
 
           {reportPreview && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-[var(--pw-radius-md)] bg-primary text-primary-foreground p-5 flex flex-col justify-between gap-4">
+              <div className="rounded-[var(--pw-radius-lg)] bg-primary text-primary-foreground p-5 flex flex-col justify-between gap-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium opacity-90">Provo Score</span>
                   <Link
@@ -103,49 +182,55 @@ export function WorkerPage() {
 
               <Card className="p-5 flex flex-col justify-between gap-4">
                 <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground">Total Earned</span>
+                  <Link
+                    to="/worker/jobs"
+                    aria-label="View earned jobs"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+                <p className="text-3xl font-bold tabular-nums text-foreground">
+                  {formatNaira(totalEarnedNaira)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {confirmedDays} paid {confirmedDays === 1 ? 'day' : 'days'}
+                </p>
+              </Card>
+
+              <Card className="p-5 flex flex-col justify-between gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground">Pending Pay</span>
+                  <Link
+                    to="/worker/jobs"
+                    aria-label="View pending pay"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+                <p className="text-3xl font-bold tabular-nums text-foreground">
+                  {formatNaira(pendingPayNaira)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {waitingDays} {waitingDays === 1 ? 'day' : 'days'} in 24h window
+                </p>
+              </Card>
+
+              <Card className="p-5 flex flex-col justify-between gap-4">
+                <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-foreground">Paid days</span>
                   <Link
                     to="/worker/jobs"
                     aria-label="View jobs"
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
                 </div>
                 <p className="text-4xl font-bold tabular-nums text-foreground">{confirmedDays}</p>
                 <p className="text-xs text-muted-foreground">Paid out to Paga</p>
-              </Card>
-
-              <Card className="p-5 flex flex-col justify-between gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">24h window</span>
-                  <Link
-                    to="/worker/jobs"
-                    aria-label="View waiting days"
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground"
-                  >
-                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Link>
-                </div>
-                <p className="text-4xl font-bold tabular-nums text-foreground">{waitingDays}</p>
-                <p className="text-xs text-muted-foreground">Awaiting employer or supervisor</p>
-              </Card>
-
-              <Card className="p-5 flex flex-col justify-between gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">Active months</span>
-                  <Link
-                    to="/worker/jobs"
-                    aria-label="View work history"
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Link>
-                </div>
-                <p className="text-4xl font-bold tabular-nums text-foreground">
-                  {reportPreview.activeMonths.filter((m) => m.confirmedDays > 0).length}
-                </p>
-                <p className="text-xs text-muted-foreground">Consistent work history</p>
               </Card>
             </div>
           )}
@@ -162,20 +247,19 @@ export function WorkerPage() {
           )}
 
           {activeJobs.length === 0 ? (
-            <Card className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <h2 className="text-base font-semibold text-foreground">No active funded jobs</h2>
-                <p className="text-xs text-muted-foreground max-w-lg">
-                  When an employer locks job pay for {worker.name}, your daily schedule
-                  appears here so you can mark each day done.
-                </p>
-              </div>
-              <Link to="/client" className="shrink-0">
-                <Button size="sm" variant="secondary">
-                  Try employer flow →
-                </Button>
-              </Link>
-            </Card>
+            <EmptyState
+              icon={Briefcase}
+              compact
+              title="No active funded jobs"
+              description={`When an employer locks job pay for ${worker.name}, your daily schedule appears here so you can mark each day done.`}
+              action={
+                <Link to="/worker/share-link">
+                  <Button size="sm" variant="secondary">
+                    Share your work link →
+                  </Button>
+                </Link>
+              }
+            />
           ) : (
             activeJobs.map((job) => {
               const nextPending = job.days.find((d) => d.status === 'PENDING')
@@ -223,10 +307,14 @@ export function WorkerPage() {
                           setMarkingKey(actionKey)
                           try {
                             await api.markDayDone(job.id, nextPending.dayNumber)
-                            setNotice(
-                              `Day ${nextPending.dayNumber} for ${job.clientName} marked Done. 24h confirmation window started.`,
-                            )
+                            const msg = `Day ${nextPending.dayNumber} for ${job.clientName} marked Done. 24h confirmation window started.`
+                            setNotice(msg)
+                            toast.success(msg, `Day ${nextPending.dayNumber} reported`)
                             await load()
+                          } catch (err) {
+                            toast.error(
+                              err instanceof Error ? err.message : 'Could not mark day as done.',
+                            )
                           } finally {
                             setMarkingKey(null)
                           }
@@ -266,7 +354,22 @@ export function WorkerPage() {
                     <span>{copiedNuban ? 'Copied' : 'Copy'}</span>
                   </Button>
                 </div>
-                <p className="font-mono text-2xl sm:text-3xl font-semibold tracking-wider text-foreground">
+                <div className="flex items-baseline justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Available to withdraw</p>
+                    <p className="text-2xl font-bold tabular-nums text-foreground">
+                      {formatNaira(availableBalanceNaira)}
+                    </p>
+                  </div>
+                  <Button
+                    size="md"
+                    disabled={availableBalanceNaira <= 0}
+                    onClick={() => setWithdrawOpen(true)}
+                  >
+                    Withdraw
+                  </Button>
+                </div>
+                <p className="font-mono text-xl sm:text-2xl font-semibold tracking-wider text-foreground">
                   {worker.pagaAccountNumber.replace(/(\d{4})(\d{4})(\d{2})/, '$1 $2 $3')}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -287,12 +390,36 @@ export function WorkerPage() {
                 </Link>
               </div>
               <div className="space-y-2.5">
-                {jobs.slice(0, 3).map((job) => (
-                  <JobLine key={job.id} job={job} mode="worker" />
-                ))}
+                {jobs.length === 0 ? (
+                  <EmptyState
+                    icon={Briefcase}
+                    compact
+                    title="No job history yet"
+                    description="Completed and funded jobs will appear here once an employer creates one."
+                  />
+                ) : (
+                  jobs.slice(0, 3).map((job) => (
+                    <JobLine key={job.id} job={job} mode="worker" />
+                  ))
+                )}
               </div>
             </Card>
           </div>
+          <WorkerWithdrawModal
+            open={withdrawOpen}
+            onClose={() => setWithdrawOpen(false)}
+            worker={worker}
+            availableBalanceNaira={availableBalanceNaira}
+            onSuccess={(amountNaira, destination) => {
+              const nextWithdrawn = withdrawnNaira + amountNaira
+              setWithdrawnNaira(nextWithdrawn)
+              window.localStorage.setItem(
+                `proofwork_withdrawn_${worker.id}`,
+                String(nextWithdrawn),
+              )
+              setNotice(`Withdrawal of ${formatNaira(amountNaira)} queued to ${destination}.`)
+            }}
+          />
         </>
       )}
     </WorkerShell>

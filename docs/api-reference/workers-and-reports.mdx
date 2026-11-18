@@ -1,6 +1,6 @@
 ---
 title: "Workers, consents & reports"
-description: "Browse available artisans, fetch worker records, create share links, and read lender reports."
+description: "Browse available artisans, manage payout settings, share links, and read lender reports."
 ---
 
 ## Public artisan directory (`GET /workers/available`)
@@ -27,10 +27,15 @@ Returns available artisans filtered by optional `trade` and `area` query paramet
   `UNVERIFIED`, `BRONZE_VERIFIED`, `SILVER_VERIFIED`, or `GOLD_VERIFIED`.
 </ResponseField>
 
-## Worker record & lender sharing
+## Worker record, settings & lender sharing
 
 | Method | Path | Auth | Description |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/workers/{worker_id}/record` | Worker / Admin | Full work record and daily verification metrics |
-| `POST` | `/workers/{worker_id}/shares` | Worker | Creates a consented, expiring lender report link |
-| `GET` | `/reports/{token}` | Public (token-gated) | Returns lender report with tokenized clients and 0–100 score (`410` if revoked/expired) |
+| `GET` | `/workers/{worker_id}/payment-link` | Worker | Retrieve persistent shareable payment link and Paga account details |
+| `GET` | `/workers/{worker_id}/settings` | Worker | Read payout account, availability, and alert channel preferences |
+| `PATCH` | `/workers/{worker_id}/settings` | Worker | Update payout account, trade, area, or availability |
+| `GET` | `/workers/{worker_id}/shares` | Worker | List active and revoked lender share tokens |
+| `POST` | `/workers/{worker_id}/shares` | Worker | Create a consented, expiring lender report link |
+| `POST` | `/workers/{worker_id}/shares/{token}/revoke` | Worker | Immediately revoke a lender share token |
+| `GET` | `/reports/{token}` | Public (token-gated) | Return lender report with tokenized employers and 0–100 score (`410` if revoked/expired) |

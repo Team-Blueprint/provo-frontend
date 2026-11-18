@@ -7,6 +7,7 @@ import {
   Menu,
 } from 'reicon-react'
 import { Button } from '@/components/ui/button'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 import { RevealSection } from '@/components/pw/RevealSection'
 import { ScrollRevealText } from '@/components/pw/ScrollRevealText'
 import { WhoItsForSection } from '@/components/pw/WhoItsForSection'
@@ -125,9 +126,10 @@ export function LandingPage() {
           <Link
             to="/"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="px-5 text-center text-xl font-extrabold tracking-tight text-primary"
+            className="inline-flex items-center gap-2 px-4 text-center text-xl font-extrabold tracking-tight text-primary"
           >
-            Provo
+            <ProvoMark className="h-6 w-6" />
+            <span>Provo</span>
           </Link>
 
           <div className="flex items-center justify-end gap-6">
@@ -161,9 +163,10 @@ export function LandingPage() {
           <Link
             to="/"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="text-xl font-extrabold tracking-tight text-primary"
+            className="inline-flex items-center gap-2 text-xl font-extrabold tracking-tight text-primary"
           >
-            Provo
+            <ProvoMark className="h-6 w-6" />
+            <span>Provo</span>
           </Link>
           <button
             type="button"
@@ -245,43 +248,34 @@ export function LandingPage() {
         className="relative overflow-hidden pt-20 sm:pt-24 pb-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(0, 49, 112, 0.14) 0%, rgba(0, 49, 112, 0.08) 72%, rgba(0, 49, 112, 0.04) 100%)',
+            'linear-gradient(180deg, rgba(0, 49, 112, 0.15) 0%, rgba(0, 49, 112, 0.08) 70%, rgba(0, 49, 112, 0.04) 100%)',
         }}
       >
         <svg
           aria-hidden="true"
           viewBox="0 0 1440 900"
           preserveAspectRatio="none"
-          className="pointer-events-none absolute inset-0 hidden md:block h-full w-full"
+          className="pointer-events-none absolute inset-0 h-full w-full"
         >
           <path
-            d="M0,290 C130,295 170,560 320,630 C445,688 455,815 565,865 L565,900 L0,900 Z"
+            d="M0,460 C320,330 540,560 880,410 C1140,295 1300,370 1440,310 L1440,900 L0,900 Z"
+            fill="rgba(0, 49, 112, 0.09)"
+          />
+          <path
+            d="M0,610 C280,480 610,360 940,520 C1180,635 1320,540 1440,470 L1440,900 L0,900 Z"
             fill="rgba(0, 49, 112, 0.12)"
           />
           <path
-            d="M1440,290 C1310,295 1270,560 1120,630 C995,688 985,815 875,865 L875,900 L1440,900 Z"
-            fill="rgba(0, 49, 112, 0.12)"
-          />
-        </svg>
-
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 430 860"
-          preserveAspectRatio="none"
-          className="pointer-events-none absolute inset-0 md:hidden h-full w-full"
-        >
-          <path
-            d="M0,185 C48,205 78,465 132,690 L132,860 L0,860 Z"
-            fill="rgba(0, 49, 112, 0.13)"
-          />
-          <path
-            d="M430,185 C382,205 352,465 298,690 L298,860 L430,860 Z"
-            fill="rgba(0, 49, 112, 0.13)"
+            d="M180,900 C310,640 510,510 720,510 C930,510 1130,640 1260,900 Z"
+            fill="rgba(0, 49, 112, 0.10)"
           />
         </svg>
 
         <div className="relative z-20 mx-auto max-w-4xl px-4 pt-6 sm:pt-8 text-center space-y-3.5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/75 bg-white/65 px-3.5 py-1.5 backdrop-blur-xs shadow-2xs">
+          <div
+            className="hero-enter inline-flex items-center gap-2 rounded-full border border-white/75 bg-white/65 px-3.5 py-1.5 backdrop-blur-xs shadow-2xs"
+            style={{ animationDelay: '40ms' }}
+          >
             <svg
               aria-hidden="true"
               viewBox="0 0 24 16"
@@ -296,18 +290,27 @@ export function LandingPage() {
             </span>
           </div>
 
-          <h1 className="mx-auto max-w-2xl text-4xl sm:text-6xl font-semibold tracking-tight text-foreground leading-[1.06]">
+          <h1
+            className="hero-enter mx-auto max-w-2xl text-4xl sm:text-6xl font-semibold tracking-tight text-foreground leading-[1.06]"
+            style={{ animationDelay: '130ms' }}
+          >
             Real work, counted.
             <br />
             Real income, proven.
           </h1>
 
-          <p className="mx-auto max-w-lg text-sm sm:text-lg text-muted-foreground leading-relaxed">
+          <p
+            className="hero-enter mx-auto max-w-lg text-sm sm:text-lg text-muted-foreground leading-relaxed"
+            style={{ animationDelay: '220ms' }}
+          >
             Employers lock job pay through Paga before work begins. Bricklayers, electricians, and
             tilers mark each day done on Telegram or USSD in one tap.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <div
+            className="hero-enter flex flex-wrap items-center justify-center gap-3 pt-1"
+            style={{ animationDelay: '310ms' }}
+          >
             <Link to="/sign-in">
               <Button className="rounded-full">
                 <span>Get started</span>
@@ -322,7 +325,10 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="relative z-20 mx-auto mt-3 sm:mt-4 flex max-w-5xl items-end justify-center px-2 pt-2 -mb-14 sm:-mb-24">
+        <div
+          className="hero-mockup-enter relative z-20 mx-auto mt-3 sm:mt-4 flex max-w-5xl items-end justify-center px-2 pt-2 -mb-14 sm:-mb-24"
+          style={{ animationDelay: '380ms' }}
+        >
           <Link
             to="/ussd"
             aria-label="Open USSD Simulator"
@@ -336,7 +342,15 @@ export function LandingPage() {
               />
 
               <div className="absolute top-[9.5%] left-[13.5%] right-[13.5%] h-[42.5%] flex flex-col justify-between rounded-[4px] bg-[#0e1518] p-1.5 sm:p-3 text-left font-sans text-white overflow-hidden border border-white/10">
-                <div className="flex items-center justify-end pb-0.5">
+                <div className="flex items-center justify-between pb-0.5 text-[7px] sm:text-[10px] font-mono text-white">
+                  <span className="inline-flex items-end gap-[1px] sm:gap-[1.5px]">
+                    <span className="h-[3px] sm:h-[4px] w-[1.5px] sm:w-[2px] bg-white inline-block" />
+                    <span className="h-[5px] sm:h-[6px] w-[1.5px] sm:w-[2px] bg-white inline-block" />
+                    <span className="h-[7px] sm:h-[8px] w-[1.5px] sm:w-[2px] bg-white inline-block" />
+                    <span className="h-[9px] sm:h-[10px] w-[1.5px] sm:w-[2px] bg-white inline-block" />
+                    <span className="ml-0.5 sm:ml-1 text-[6.5px] sm:text-[9px] leading-none">2G</span>
+                  </span>
+                  <span className="leading-none">17:41</span>
                   <span className="inline-flex items-center gap-0.5">
                     <span className="h-1.5 w-3 sm:h-2 sm:w-3.5 rounded-[1px] border border-white bg-white inline-block" />
                     <span className="h-1 w-0.5 bg-white inline-block" />
@@ -764,7 +778,7 @@ export function LandingPage() {
                 { time: 'Day 0', label: 'Employer funds Paga NUBAN' },
                 { time: 'Close of day', label: 'Worker marks Day Done' },
                 { time: '≤24h window', label: 'Employer/Supervisor confirms' },
-                { time: 'Instant', label: 'Paga payout + Score updated' },
+                { time: 'Instant', label: 'Paga payout + Work record updated' },
               ].map((node, i) => (
                 <div key={node.time} className="relative pl-4 border-l-2 border-white/25 space-y-1">
                   <span className="font-mono text-[11px] text-primary-foreground/65">
@@ -845,11 +859,11 @@ export function LandingPage() {
           className="pointer-events-none absolute inset-0 h-full w-full"
         >
           <path
-            d="M0,120 C140,125 180,320 340,390 C460,440 480,490 590,520 L0,520 Z"
-            fill="rgba(0, 49, 112, 0.12)"
+            d="M0,220 C340,110 620,310 980,180 C1210,95 1340,160 1440,120 L1440,520 L0,520 Z"
+            fill="rgba(0, 49, 112, 0.09)"
           />
           <path
-            d="M1440,120 C1300,125 1260,320 1100,390 C980,440 960,490 850,520 L1440,520 Z"
+            d="M0,330 C310,210 680,150 1020,290 C1220,375 1350,310 1440,260 L1440,520 L0,520 Z"
             fill="rgba(0, 49, 112, 0.12)"
           />
         </svg>
@@ -873,7 +887,13 @@ export function LandingPage() {
                 Employer flow
               </Button>
             </Link>
-            <Link to="/report/rep_emem_lapo_2026">
+            <Link
+              to={
+                import.meta.env.VITE_USE_MOCK === 'true'
+                  ? '/report/rep_emem_lapo_2026'
+                  : '/report/EMEM-CREDIT-EVAL-2026'
+              }
+            >
               <Button variant="secondary" size="md" className="rounded-full bg-white/80">
                 Lender report
               </Button>
@@ -899,10 +919,7 @@ export function LandingPage() {
           <div className="grid gap-10 lg:grid-cols-12">
             <div className="lg:col-span-4 space-y-4">
               <Link to="/" className="flex items-center gap-2 font-semibold text-background">
-                <span
-                  className="inline-block h-3 w-3 rounded-[3px] bg-[var(--pw-brick)]"
-                  aria-hidden="true"
-                />
+                <ProvoMark className="h-5 w-5" />
                 <span>Provo</span>
               </Link>
               <p className="text-xs text-background/70 max-w-xs">
@@ -974,7 +991,14 @@ export function LandingPage() {
                 <p className="font-medium uppercase tracking-wider text-background/50">Lenders</p>
                 <ul className="space-y-2 text-background/80">
                   <li>
-                    <Link to="/report/rep_emem_lapo_2026" className="hover:text-background">
+                    <Link
+                      to={
+                        import.meta.env.VITE_USE_MOCK === 'true'
+                          ? '/report/rep_emem_lapo_2026'
+                          : '/report/EMEM-CREDIT-EVAL-2026'
+                      }
+                      className="hover:text-background"
+                    >
                       Sample report
                     </Link>
                   </li>

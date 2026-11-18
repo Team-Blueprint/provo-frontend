@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
+  AngleDown,
   Check,
   CheckCircle,
   CloseCircle,
@@ -14,6 +15,7 @@ import type { DisputeReason, EscrowJob } from '@/api/types'
 import { AmountText } from '@/components/pw/AmountText'
 import { DisputeDialog } from '@/components/pw/DisputeDialog'
 import { EmployerShell } from '@/components/pw/EmployerShell'
+import { EmptyState } from '@/components/pw/EmptyState'
 import { GradeBadge } from '@/components/pw/GradeBadge'
 import { StatusPill } from '@/components/pw/StatusPill'
 import { Button } from '@/components/ui/button'
@@ -28,6 +30,16 @@ export function SupervisorPage() {
   const [search, setSearch] = useState('')
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({})
+
+  function isExpanded(jobId: string, idx: number) {
+    if (jobId in expandedIds) return expandedIds[jobId]
+    return targetJobId ? jobId === targetJobId : idx === 0
+  }
+
+  function toggleExpand(jobId: string, idx: number) {
+    setExpandedIds((prev) => ({ ...prev, [jobId]: !isExpanded(jobId, idx) }))
+  }
 
   const [assignModalOpen, setAssignModalOpen] = useState(false)
   const [selectedJobId, setSelectedJobId] = useState('')
@@ -41,8 +53,8 @@ export function SupervisorPage() {
   )
 
   async function load() {
-    const dash = await api.getWorkerDashboard()
-    const list = [...dash.jobs]
+    const clientJobs = await api.getClientJobs()
+    const list = [...clientJobs]
     if (targetJobId) {
       list.sort((a, b) => (a.id === targetJobId ? -1 : b.id === targetJobId ? 1 : 0))
     }
@@ -65,8 +77,9 @@ export function SupervisorPage() {
     setTimeout(() => setCopiedKey(null), 1600)
   }
 
-  function getUniqueSupervisorUrl(jobId: string) {
-    const path = `/supervisor?job=${jobId}&token=sup_${jobId}`
+  function getUniqueSupervisorUrl(job: EscrowJob) {
+    const token = job.supervisorToken || `sup_${job.id}`
+    const path = `/supervisor/verify?job=${job.id}&token=${encodeURIComponent(token)}`
     return typeof window !== 'undefined' ? `${window.location.origin}${path}` : path
   }
 
@@ -183,26 +196,32 @@ export function SupervisorPage() {
         </h2>
 
         {supervisedJobs.length === 0 ? (
-          <Card className="p-6 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              No supervisors assigned yet. Add a supervisor’s name and phone number to a job to
-              generate their unique reporting link.
-            </p>
-            <div>
+          <EmptyState
+            icon={UserTick}
+            compact
+            title="No supervisors assigned yet"
+            description="Add a supervisor’s name and phone number to any job to generate their unique daily reporting link."
+            action={
               <Button size="sm" onClick={() => openAssignForJob()}>
                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Assign a supervisor</span>
               </Button>
-            </div>
-          </Card>
+            }
+          />
         ) : (
           <div className="space-y-4">
-            {supervisedJobs.map((job) => {
-              const uniqueUrl = getUniqueSupervisorUrl(job.id)
+            {supervisedJobs.map((job, idx) => {
+              const uniqueUrl = getUniqueSupervisorUrl(job)
+              const expanded = isExpanded(job.id, idx)
               return (
-                <Card key={job.id} className="p-5 space-y-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
-                    <div className="flex items-start gap-3">
+                <Card key={job.id} className="overflow-hidden">
+                  <div className="p-5 flex flex-wrap items-start justify-between gap-3">
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      onClick={() => toggleExpand(job.id, idx)}
+                      className="flex flex-1 min-w-[200px] items-start gap-3 text-left cursor-pointer"
+                    >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
                         <UserTick weight="Filled" className="h-5 w-5" aria-hidden="true" />
                       </div>
@@ -223,7 +242,7 @@ export function SupervisorPage() {
                           ({job.description})
                         </p>
                       </div>
-                    </div>
+                    </button>
 
                     <div className="flex items-center gap-2">
                       <StatusPill status={job.status} />
@@ -234,72 +253,105 @@ export function SupervisorPage() {
                       >
                         Edit
                       </Button>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[12px] border border-primary/20 bg-primary/5 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="min-w-0 space-y-0.5">
-                      <p className="text-xs font-semibold text-foreground">
-                        Unique supervisor reporting link
-                      </p>
-                      <p className="font-mono text-xs text-primary truncate">{uniqueUrl}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => copyText(`sup-link-${job.id}`, uniqueUrl)}
-                    >
-                      {copiedKey === `sup-link-${job.id}` ? (
-                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                      )}
-                      <span>
-                        {copiedKey === `sup-link-${job.id}` ? 'Link copied' : 'Copy unique link'}
-                      </span>
-                    </Button>
-                  </div>
-
-                  <div className="divide-y divide-border">
-                    {job.days.map((day) => (
-                      <div
-                        key={day.dayNumber}
-                        className="py-2.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      <button
+                        type="button"
+                        aria-label={expanded ? 'Collapse supervisor' : 'Expand supervisor'}
+                        onClick={() => toggleExpand(job.id, idx)}
+                        className="rounded-full p-1 text-muted-foreground hover:bg-muted cursor-pointer"
                       >
-                        <div className="flex flex-wrap items-center gap-2.5">
-                          <span className="font-mono text-xs font-semibold">
-                            Day {day.dayNumber}
-                          </span>
-                          <AmountText amount={Math.round(day.amountKobo / 100)} size="sm" />
-                          <StatusPill status={day.status} />
-                          {day.outcome && <GradeBadge outcome={day.outcome} size="sm" />}
-                        </div>
-
-                        {day.status === 'DONE_REPORTED' && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={async () => {
-                                await api.confirmDay(job.id, day.dayNumber, 'supervisor')
-                                load()
-                              }}
-                            >
-                              <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
-                              <span>Confirm day</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() =>
-                                setDisputeTarget({ jobId: job.id, dayNumber: day.dayNumber })
-                              }
-                            >
-                              Dispute
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                        <AngleDown
+                          className={`h-4 w-4 transition-transform duration-150 ${
+                            expanded ? 'rotate-180' : ''
+                          }`}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
                   </div>
+
+                  {expanded && (
+                    <div className="border-t border-border p-5 space-y-4">
+                      <div className="rounded-[12px] border border-primary/20 bg-primary/5 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="min-w-0 space-y-0.5">
+                          <p className="text-xs font-semibold text-foreground">
+                            Unique supervisor reporting link
+                          </p>
+                          <p className="font-mono text-xs text-primary truncate">{uniqueUrl}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => copyText(`sup-link-${job.id}`, uniqueUrl)}
+                        >
+                          {copiedKey === `sup-link-${job.id}` ? (
+                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                          )}
+                          <span>
+                            {copiedKey === `sup-link-${job.id}` ? 'Link copied' : 'Copy unique link'}
+                          </span>
+                        </Button>
+                      </div>
+
+                      <div className="divide-y divide-border">
+                        {job.days.map((day) => (
+                          <div
+                            key={day.dayNumber}
+                            className="py-2.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                          >
+                            <div className="flex flex-wrap items-center gap-2.5">
+                              <span className="font-mono text-xs font-semibold">
+                                Day {day.dayNumber}
+                              </span>
+                              <AmountText amount={Math.round(day.amountKobo / 100)} size="sm" />
+                              <StatusPill status={day.status} />
+                              {day.outcome && <GradeBadge outcome={day.outcome} size="sm" />}
+                              {day.proofPhoto && (
+                                <a
+                                  href={day.proofPhoto}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title={`View Day ${day.dayNumber} proof photo`}
+                                  className="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-foreground hover:border-primary"
+                                >
+                                  <img
+                                    src={day.proofPhoto}
+                                    alt={`Day ${day.dayNumber} proof`}
+                                    className="h-5 w-7 rounded-[3px] object-cover"
+                                  />
+                                  <span>Proof photo</span>
+                                </a>
+                              )}
+                            </div>
+
+                            {day.status === 'DONE_REPORTED' && (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={async () => {
+                                    await api.confirmDay(job.id, day.dayNumber, 'supervisor')
+                                    load()
+                                  }}
+                                >
+                                  <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                                  <span>Confirm day</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() =>
+                                    setDisputeTarget({ jobId: job.id, dayNumber: day.dayNumber })
+                                  }
+                                >
+                                  Dispute
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </Card>
               )
             })}

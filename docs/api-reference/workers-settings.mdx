@@ -1,0 +1,39 @@
+---
+title: "Worker settings"
+description: "Read and update a worker's Paga payout account, trade, area, and directory availability."
+api: "PATCH /workers/{worker_id}/settings"
+---
+
+## Get settings (`GET /workers/{worker_id}/settings`)
+
+```bash curl
+curl https://api.useproofwork.ng/workers/550e8400-e29b-41d4-a716-446655440000/settings \
+  -H "Authorization: Bearer <worker_token>"
+```
+
+## Update settings (`PATCH /workers/{worker_id}/settings`)
+
+<CodeGroup>
+```bash curl
+curl -X PATCH https://api.useproofwork.ng/workers/550e8400-e29b-41d4-a716-446655440000/settings \
+  -H "Authorization: Bearer <worker_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "area": "Uyo",
+    "is_available": true,
+    "payout_account_number": "1092837465",
+    "payout_bank_code": "PAGA"
+  }'
+```
+
+```json 200 OK
+{
+  "worker_id": "550e8400-e29b-41d4-a716-446655440000",
+  "trade": "BRICKLAYING",
+  "area": "Uyo",
+  "is_available": true,
+  "payout_account_number": "1092837465",
+  "payout_bank_code": "PAGA"
+}
+```
+</CodeGroup>

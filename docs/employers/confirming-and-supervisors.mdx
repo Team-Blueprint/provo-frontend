@@ -3,18 +3,18 @@ title: "Confirming & supervisors"
 description: "Daily confirmation rules, delegating to a site supervisor, and raising disputes."
 ---
 
-When an artisan marks a day done (`DONE_REPORTED`), a 24-hour review window opens. Either the **client** or the **assigned supervisor** can act.
+When an artisan marks a day done (`DONE_REPORTED`), a 24-hour review window opens. Either the **employer** or the **assigned supervisor** can act.
 
 ## Shared sign-off rules
 
-- **First valid actor wins:** Whichever authorized party (client or supervisor) confirms first transitions the day from `DONE_REPORTED` to `CONFIRMED` and triggers the payout.
+- **First valid actor wins:** Whichever authorized party (employer or supervisor) confirms first transitions the day from `DONE_REPORTED` to `CONFIRMED` and triggers the payout.
 - **Supervisor invite link:** From any job card in the Employer workspace, copy `/supervisor?job={jobId}` and send it to your site foreman.
-- **Transparent attribution:** Lender reports clearly distinguish `Client confirmed`, `Supervisor confirmed`, and `Auto-released (24h)`.
+- **Transparent attribution:** Lender reports clearly distinguish `Employer confirmed`, `Supervisor confirmed`, and `Auto-released (24h)`.
 
 ## Handling disputes
 
 If the work for that day was incomplete or not performed, tap **Dispute** within the 24-hour window (`POST /jobs/{id}/days/{n}/dispute`) with a reason.
 
 <Warning>
-Disputing a day immediately transitions it to `DISPUTED` and **freezes the 24-hour auto-release scheduler**. Disputed funds remain safely in escrow until an administrator reviews evidence from both parties and resolves the dispute via `POST /admin/disputes/{id}/resolve` (release to worker, refund to client, or split).
+Disputing a day immediately transitions it to `DISPUTED` and **freezes the 24-hour auto-release scheduler**. Disputed funds remain safely in escrow until an administrator reviews evidence from both parties and resolves the dispute via `POST /admin/disputes/{id}/resolve` (release to worker, refund to employer, or split).
 </Warning>

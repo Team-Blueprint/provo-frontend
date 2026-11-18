@@ -1,0 +1,75 @@
+---
+title: "Share links & lender reports"
+description: "Create, list, and revoke worker consent links, and fetch token-gated lender reports."
+api: "GET /reports/{token}"
+---
+
+## Create share link (`POST /workers/{worker_id}/shares`)
+
+<ParamField body="purpose" type="string" required>
+  Lender or purpose label (e.g. `"LAPO Microfinance Tool Loan"`).
+</ParamField>
+
+<ParamField body="valid_days" type="integer">
+  Expiry window in days (`1` to `30`, default `7`).
+</ParamField>
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.useproofwork.ng/workers/550e8400-e29b-41d4-a716-446655440000/shares \
+  -H "Authorization: Bearer <worker_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "purpose": "LAPO Microfinance Tool Loan",
+    "valid_days": 7
+  }'
+```
+
+```json 200 OK
+{
+  "token": "rep_emem_lapo_2026",
+  "report_url": "https://useproofwork.ng/report/rep_emem_lapo_2026",
+  "expires_at": "2026-11-25T16:00:00Z",
+  "purpose": "LAPO Microfinance Tool Loan"
+}
+```
+</CodeGroup>
+
+## List & revoke shares
+
+- `GET /workers/{worker_id}/shares`: List active and revoked share links.
+- `POST /workers/{worker_id}/shares/{token}/revoke`: Immediately revokes access so `GET /reports/{token}` returns `410 Gone`.
+
+## Fetch lender report (`GET /reports/{token}`)
+
+<CodeGroup>
+```bash curl
+curl https://api.useproofwork.ng/reports/rep_emem_lapo_2026
+```
+
+```json 200 OK
+{
+  "report_token": "rep_emem_lapo_2026",
+  "worker": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Emem Bassey",
+    "trade": "BRICKLAYING",
+    "area": "Uyo"
+  },
+  "metrics": {
+    "total_paid_naira": 180000,
+    "confirmed_days": 16,
+    "auto_released_days": 2,
+    "disputed_days": 0,
+    "unique_payers": 6,
+    "repeat_payers": 3,
+    "active_months": 4
+  },
+  "fraud_evaluation": {
+    "is_flagged": false,
+    "severity": "CLEAN",
+    "flags": []
+  }
+}
+```
+</CodeGroup>

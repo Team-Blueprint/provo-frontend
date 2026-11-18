@@ -1,30 +1,30 @@
 ---
 title: "For Lenders"
-description: "Underwrite informal-economy borrowers using verified work records instead of raw bank deposits."
+description: "Assess informal-economy borrowers using verified work records instead of raw bank deposits."
 ---
 
-Traditional underwriting models rely on salary slips or six months of bank statements. For the 83% of African workers in the informal economy, bank deposits fail to answer the most basic underwriting questions:
+Traditional loan checks rely on salary slips or six months of bank statements. For most skilled workers in Africa, bank deposits leave lenders guessing:
 
-- Was this transfer payment for real work, or a personal gift from a relative?
-- How many distinct clients actually pay this artisan?
-- How consistently do they work across months?
+- Was this transfer payment for real work, or a gift from a relative?
+- How many different employers actually pay this worker?
+- How steadily do they work from month to month?
 
-Provo solves this with a structured, consent-gated **Lender Report** (`/report/{token}` or `GET /reports/{token}`).
+Provo answers these questions with a worker-approved **Lender Work Report** (`/report/{token}` or `GET /reports/{token}`), without imposing a single proprietary score—so each lender can apply its own underwriting rules to the raw verified signals.
 
 ## What a lender sees
 
 <Columns cols={2}>
-  <Card title="0–100 Credibility Score" icon="chart-bar" href="/docs/lenders/credibility-score">
-    Deterministic score with four tier bands and every point traced to its exact formula.
+  <Card title="Verified work signals" icon="chart-bar" href="/docs/the-one-rule">
+    Confirmed days, supervisor-confirmed days, 24h auto-released days, active months, and repeat employers.
   </Card>
-  <Card title="Signed Snapshots" icon="shield-check" href="/docs/lenders/signed-snapshots">
-    Ed25519-signed JSON snapshots with tokenized client IDs and verifiable receipt numbers.
+  <Card title="Signed snapshots" icon="shield-check" href="/docs/lenders/signed-snapshots">
+    Tamper-proof JSON reports with masked employer IDs, fraud checks, and verifiable receipt numbers.
   </Card>
 </Columns>
 
-## Key underwriting guarantees
+## Built-in lender safeguards
 
-1. **Money locked before work:** Every scored day is backed by upfront Paga escrow funding, rather than self-reported cash.
-2. **Silence is discounted:** Days that auto-released after 24 hours count for half as much as actively confirmed days, and reports flag when `auto_release_ratio > 50%`.
-3. **Tokenized client diversity:** Payers appear as deterministic tokens (`Client #A4C1`), letting your model verify repeat clients and unique payers without exposing personal PII.
-4. **Explicit fraud flags:** Circular flows, shared phone/Telegram identities, and velocity bursts are surfaced directly on the report.
+1. **Money locked before work:** Every recorded day is backed by an upfront Paga transfer, never self-reported cash.
+2. **Active confirmation vs. 24h auto-release:** Reports separate days actively confirmed by an employer or supervisor from days that auto-released after 24 hours of silence.
+3. **Masked employer IDs:** Employers appear as consistent IDs (`Employer #A4C1`) so you can verify repeat business and client diversity without exposing personal phone numbers.
+4. **Clear fraud flags:** Circular transfers, shared phone or Telegram accounts, and sudden job bursts appear directly on the report.

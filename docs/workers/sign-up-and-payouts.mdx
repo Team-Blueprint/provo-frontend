@@ -7,20 +7,24 @@ Artisans can join Provo through three entry points, all backed by the same ident
 
 <Tabs>
   <Tab title="Telegram Bot">
-    1. Open a client's SMS invite link (`t.me/...`) or search for the Provo bot.
+    1. Open an employer's SMS invite link (`t.me/...`) or search for the Provo bot.
     2. Tap **Share Contact** so Telegram provides your verified Nigerian phone number (`+234`).
     3. Pick your primary trade from the fixed list (`BRICKLAYING`, `PAINTING`, `PLUMBING`, `CARPENTRY`, `ELECTRICAL`, `WELDING`, `TAILORING`, `MECHANIC`) and enter your Paga account number.
   </Tab>
   <Tab title="Web Workspace">
-    1. Visit `/sign-in` and select **Worker**.
-    2. Enter your full name, phone number, and trade.
-    3. Verify with the 6-digit SMS one-time passcode (`POST /auth/signup` followed by `POST /auth/verify-otp`).
+    1. Visit `/sign-in?role=worker` and switch to **Create account**.
+    2. Enter your full name, Nigerian phone number, primary trade, and a 6-digit numeric PIN (`POST /auth/signup`).
+    3. Verify with the 6-digit SMS one-time passcode (`POST /auth/verify-otp`). Returning workers sign in directly with phone + 6-digit PIN (`POST /auth/login`).
   </Tab>
-  <Tab title="USSD (*347*900#)">
-    1. Dial `*347*900#` on any feature phone (no data plan required).
-    2. Select **1. Register as Artisan**, choose your trade number, and confirm your Paga payout account.
+  <Tab title="USSD (*123#)">
+    1. Dial `*123#` in the USSD simulator (`/ussd`).
+    2. Check your balance (`GET /ussd/balance`), view pending jobs (`GET /ussd/pending-jobs`), report today's work done (`POST /ussd/report-done`), or withdraw to your Paga payout account (`POST /ussd/withdraw`).
   </Tab>
 </Tabs>
+
+## Paga payout account & shareable payment link
+
+Workers manage their Paga payout account number, alert channel preference, and availability in [Worker Settings](/worker/settings) (`GET` / `PATCH /workers/{id}/settings`), and can copy their persistent payment link from `GET /workers/{id}/payment-link` to send directly to employers.
 
 ## Public artisan directory
 

@@ -1,38 +1,38 @@
 ---
 title: "How it works"
-description: "Follow a 3-day job from upfront NUBAN lock to daily Paga payout and signed lender report."
+description: "Follow a multi-day job from upfront bank transfer to daily Paga payout and signed lender report."
 ---
 
-Every job on Provo follows a four-stage lifecycle across the client, worker, optional supervisor, and lender.
+Every job on Provo moves through four simple steps across the employer, worker, optional supervisor, and lender.
 
 <Steps>
-  <Step title="Client creates and funds the job">
-    A client (or site contractor) selects a trade from the fixed enum (such as `BRICKLAYING`, `PAINTING`, or `PLUMBING`), chooses an artisan or invites one by phone number, and sets `total_kobo` and `days`.
+  <Step title="Employer creates and funds the job">
+    An employer picks a trade (such as `BRICKLAYING`, `PAINTING`, or `PLUMBING`), chooses a worker or invites one by phone number, and enters the total pay and number of days.
 
-    Calling `POST /jobs/{id}/fund-request` generates a **one-time 10-digit Paga virtual NUBAN** and payment link. The client transfers the full amount from any Nigerian bank (OPay, UBA, Access, GTBank, Kuda). When Paga's signed webhook arrives, the job moves to `FUNDED` and the NUBAN is deactivated.
+    Provo immediately generates a **one-time 10-digit Paga bank account number** and payment link (shown at `/checkout/:jobId`). The employer transfers the full amount from any Nigerian bank (OPay, UBA, Access, GTBank, Kuda). Once Paga confirms the transfer, the job becomes `FUNDED` and the temporary account number closes.
   </Step>
   <Step title="Worker marks each day done">
-    Once the job is `FUNDED`, the artisan can work and report each day (`1..N`) as complete via Telegram, the web workspace, or USSD (`*347*900#`).
+    Once the job is `FUNDED`, the worker can start and mark each day (`1..N`) as complete using Telegram, the web app, or USSD (`*123#`).
 
-    Reporting Day `n` moves the day from `PENDING` to `DONE_REPORTED` and sets `release_at = done_at + 24 hours`.
+    Marking Day `n` done moves the day to `DONE_REPORTED` and starts a 24-hour review timer.
   </Step>
-  <Step title="Client or supervisor confirms (or 24h auto-releases)">
-    The client or an assigned site supervisor receives a notification and taps **Confirm** (`POST /jobs/{id}/days/{n}/confirm`).
+  <Step title="Employer or supervisor confirms (or 24h auto-releases)">
+    The employer or an assigned site supervisor gets a notification and taps **Confirm** (`POST /jobs/{id}/days/{n}/confirm`).
 
-    Confirming moves the day to `CONFIRMED` and atomically writes a `RELEASED` ledger entry and an outbox `payouts` row in the same database transaction. The payout worker disburses `day.amount_kobo` to the worker's Paga account and marks the day `PAID`.
+    Confirming moves the day to `CONFIRMED` and saves the payout in the same step so no payment can be lost. Provo sends that day's pay to the worker's Paga account and marks the day `PAID`.
 
-    If neither party responds within 24 hours, the scheduler transitions the day to `AUTO_RELEASED` and triggers the payout at reduced score weight.
+    If nobody replies within 24 hours, Provo automatically releases the day's pay (`AUTO_RELEASED`) and labels it `Auto-released (24h)` on the worker's record.
   </Step>
   <Step title="Worker shares a signed report with a lender">
-    When the artisan applies for tool or equipment financing, they grant explicit consent (`POST /workers/{id}/shares`) to generate a time-limited report link (`/report/{token}`).
+    When the worker applies for a loan to buy tools or equipment, they approve a time-limited report link (`/report/{token}`).
 
-    The lender sees the 0–100 score, tier band, active months, repeat clients, tokenized client IDs (`Client #A1B2`), fraud flags, and receipt verification. Raw client phone numbers are never shown.
+    The lender sees verified work days, active months, repeat employers, masked employer IDs (`Employer #A1B2`), confirmation outcomes, fraud flags, and receipt checks. Real employer phone numbers are never shown.
   </Step>
 </Steps>
 
-## Integer kobo math
+## Exact kobo math (no rounding errors)
 
-All monetary amounts are stored and calculated in **integer kobo** (`100 kobo = ₦1`). When a job spans multiple days, daily pay is divided evenly using integer floor division, and any remainder kobo is added to the final day:
+All amounts are stored as whole numbers in **kobo** (`100 kobo = ₦1`). When a job lasts multiple days, daily pay is split evenly using whole-number division, and any leftover kobo is added to the last day:
 
 ```python
 base_daily = total_kobo // days
@@ -41,4 +41,4 @@ remainder = total_kobo % days
 # Day days = base_daily + remainder
 ```
 
-This guarantees `SUM(job_days.amount_kobo) == job.total_kobo` with zero floating-point rounding drift.
+This guarantees the daily amounts always add up to the exact job total.

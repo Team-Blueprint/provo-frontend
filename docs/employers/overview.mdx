@@ -3,14 +3,14 @@ title: "For Employers & Supervisors"
 description: "Pay only for confirmed work days, lock funds from any Nigerian bank, and delegate site sign-offs."
 ---
 
-Whether you are a homeowner hiring a plumber for two days or a site contractor managing five bricklayers for a week, Provo gives you two clean modes at `/client`:
+Whether you are a homeowner hiring a plumber for two days or a site contractor managing five bricklayers for a week, Provo gives you dedicated employer workflows at `/employer` (and `/employer/jobs`) plus a dedicated checkout page at `/checkout/:jobId`.
 
 <Columns cols={2}>
-  <Card title="Shared-link checkout" icon="link" href="/client?worker=demo&amount=45000&days=3">
-    When an artisan sends you their Provo payment link on WhatsApp, `/client` opens a focused 2-step checkout card with inline OTP verification and a one-time Paga NUBAN.
+  <Card title="Employer workspace" icon="briefcase" href="/sign-in?role=employer">
+    Sign in with phone + 6-digit PIN to view pending day confirmations at the top, active locked jobs, supervisor invite links, and job creation.
   </Card>
-  <Card title="Employer workspace" icon="briefcase" href="/client">
-    Opening `/client` directly loads your full workspace: pending day confirmations at the top, active locked jobs, supervisor invite links, and job creation.
+  <Card title="NUBAN & Paga checkout" icon="link" href="/employer">
+    After creating a job, `/checkout/:jobId` shows your one-time 10-digit Paga virtual NUBAN, payment link, and live funding status.
   </Card>
 </Columns>
 

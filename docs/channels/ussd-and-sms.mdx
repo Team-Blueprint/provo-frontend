@@ -1,17 +1,17 @@
 ---
-title: "USSD (*347*900#) & SMS"
+title: "USSD (*123#) & SMS"
 description: "Feature-phone accessibility and SMS deep-link invitations for workers without smartphones."
 ---
 
 Not every bricklayer or market tailor carries an active smartphone data plan on site. Provo supports feature-phone and SMS fallback flows alongside Telegram and Web.
 
-## USSD (`*347*900#`)
+## USSD (`*123#`)
 
-The interactive USSD simulator at [`/ussd`](/ussd) demonstrates the menu flow for artisans on basic phones:
+The interactive USSD simulator at [`/ussd`](/ussd) is backed by live backend endpoints (`/ussd/*`) and demonstrates the menu flow for artisans on basic phones:
 
-1. Dial `*347*900#` to open the Provo session menu.
-2. Register with trade and Paga payout account, view funded jobs, or mark today's work as `DONE_REPORTED`.
-3. Receive SMS confirmation when the client or supervisor confirms and Paga disburses the daily tranche.
+1. Dial `*123#` to open the Provo session menu (`POST /ussd`).
+2. Check wallet balance (`GET /ussd/balance`), view pending funded jobs (`GET /ussd/pending-jobs`), report today's work done (`POST /ussd/report-done`), or withdraw settled earnings (`POST /ussd/withdraw`).
+3. Receive SMS confirmation when the employer or supervisor confirms and Paga disburses the daily tranche.
 
 <Info>
 Because production telco USSD shortcodes require aggregator provisioning, the USSD channel is simulated in the demo environment and clearly labelled as simulated.
@@ -19,4 +19,4 @@ Because production telco USSD shortcodes require aggregator provisioning, the US
 
 ## SMS invitations
 
-When a client invites an artisan by phone number before the artisan has started the Telegram bot, Provo dispatches an SMS containing a `t.me` deep link with an invitation token. Pressing **Start** in Telegram automatically links the waiting funded job to the worker's profile.
+When an employer invites an artisan by phone number before the artisan has started the Telegram bot, Provo dispatches an SMS containing a `t.me` deep link with an invitation token. Pressing **Start** in Telegram automatically links the waiting funded job to the worker's profile.

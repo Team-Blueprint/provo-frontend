@@ -75,6 +75,7 @@ export interface JobDay {
   releaseAt?: string
   decidedBy?: string
   decidedAt?: string
+  proofPhoto?: string
 }
 
 export interface EscrowJob {
@@ -86,6 +87,7 @@ export interface EscrowJob {
   workerName: string
   supervisorName?: string
   supervisorPhone?: string
+  supervisorToken?: string
   trade: TradeType
   description: string
   area: string

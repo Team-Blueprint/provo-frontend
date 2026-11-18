@@ -112,9 +112,41 @@ textarea:focus-visible {
   box-shadow: none;
 }
 
+@keyframes provo-hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes provo-mockup-enter {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
+  }
+
+  .hero-enter {
+    animation: provo-hero-enter 480ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .hero-mockup-enter {
+    animation: provo-mockup-enter 620ms cubic-bezier(0.23, 1, 0.32, 1) both;
   }
 }
 

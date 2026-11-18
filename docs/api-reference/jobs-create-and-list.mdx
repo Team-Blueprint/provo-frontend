@@ -1,0 +1,84 @@
+---
+title: "Create & list jobs"
+description: "Create multi-day jobs with optional per-day breakdown and fetch job details."
+api: "POST /jobs"
+---
+
+## Create a job (`POST /jobs`)
+
+<ParamField body="trade" type="TradeType" required>
+  Trade enum (`BRICKLAYING`, `PAINTING`, `PLUMBING`, `CARPENTRY`, `ELECTRICAL`, `WELDING`, `TAILORING`, `MECHANIC`, `OTHER`).
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Short job description (minimum 5 characters).
+</ParamField>
+
+<ParamField body="total_kobo" type="integer" required>
+  Total pay in whole kobo (`4500000` = `₦45,000`).
+</ParamField>
+
+<ParamField body="days" type="integer" required>
+  Number of working days (`1` to `90`).
+</ParamField>
+
+<ParamField body="worker_id" type="uuid">
+  Default worker UUID for the job.
+</ParamField>
+
+<ParamField body="supervisor_id" type="uuid">
+  Optional site supervisor UUID.
+</ParamField>
+
+<ParamField body="auto_fund_request" type="boolean">
+  Defaults to `true`. Generates the one-time Paga NUBAN and payment link immediately.
+</ParamField>
+
+<ParamField body="days_breakdown" type="array">
+  Optional per-day list of `{ day_number, amount_kobo?, worker_id? }`.
+</ParamField>
+
+<CodeGroup>
+```bash Create job
+curl -X POST https://api.useproofwork.ng/jobs \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "trade": "BRICKLAYING",
+    "description": "Block wall fence at Shelter Afrique",
+    "total_kobo": 4500000,
+    "days": 3,
+    "worker_id": "550e8400-e29b-41d4-a716-446655440000",
+    "auto_fund_request": true
+  }'
+```
+
+```json 201 Created
+{
+  "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "client_id": "11111111-1111-1111-1111-111111111111",
+  "worker_id": "550e8400-e29b-41d4-a716-446655440000",
+  "supervisor_id": null,
+  "trade": "BRICKLAYING",
+  "description": "Block wall fence at Shelter Afrique",
+  "total_kobo": 4500000,
+  "days": 3,
+  "status": "AWAITING_FUNDING",
+  "funding_reference": "PW-REF-9B1DEB4D",
+  "paga_account_number": "8801234567",
+  "paga_payment_url": "https://beta-checkout.paga.com/pay/PW-REF-9B1DEB4D",
+  "days_schedule": [
+    { "day_number": 1, "amount_kobo": 1500000, "status": "PENDING" },
+    { "day_number": 2, "amount_kobo": 1500000, "status": "PENDING" },
+    { "day_number": 3, "amount_kobo": 1500000, "status": "PENDING" }
+  ]
+}
+```
+</CodeGroup>
+
+## List jobs (`GET /jobs`) & get job (`GET /jobs/{job_id}`)
+
+```bash curl
+curl "https://api.useproofwork.ng/jobs?status=FUNDED&limit=20&offset=0" \
+  -H "Authorization: Bearer <access_token>"
+```

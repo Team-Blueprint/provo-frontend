@@ -1,30 +1,30 @@
 ---
-title: "Escrow & integer-kobo ledger"
-description: "Double-entry ledger invariants, outbox payouts, and property-tested money safety."
+title: "Money ledger & guaranteed payouts"
+description: "How Provo tracks every kobo and makes sure confirmed days never lose a payout."
 ---
 
-Provo stores every monetary value in integer kobo and records every movement in `ledger_entries` (`FUNDED`, `PARTIAL_FUNDED`, `EXCESS_HELD`, `RELEASED`, `REFUNDED`).
+Provo stores every amount in whole kobo and records every movement in a permanent ledger (`FUNDED`, `PARTIAL_FUNDED`, `EXCESS_HELD`, `RELEASED`, `REFUNDED`).
 
-## The ledger invariant
+## The balance rule
 
-For every job at every point in time:
-
-```text
-SUM(RELEASED) + SUM(REFUNDED) <= SUM(payments_in)
-```
-
-When a job reaches a terminal state (`COMPLETED` or `CANCELLED` with all disputes and refunds settled):
+For every job at any moment:
 
 ```text
-SUM(RELEASED) + SUM(REFUNDED) == SUM(payments_in)
+Money paid out + Money refunded <= Money received
 ```
 
-## Transactional outbox pattern
+When a job is completely finished (`COMPLETED` or `CANCELLED` with all refunds settled):
 
-When a client or supervisor confirms a day, or when the 24h scheduler auto-releases a day, three things happen inside **one atomic database transaction**:
+```text
+Money paid out + Money refunded == Money received
+```
 
-1. `job_days.status` transitions to `CONFIRMED` or `AUTO_RELEASED`.
-2. A `LedgerEntry(kind="RELEASED", amount_kobo=day.amount_kobo)` row is inserted.
-3. A `Payout(status="PENDING", idempotency_ref=...)` row is inserted.
+## Guaranteed payout queue (no lost payments)
 
-Because the payout row is committed atomically with the state change, a process crash can never lose an owed disbursement. The payout worker reads pending outbox rows, calls Paga using `payout.idempotency_ref`, retries with exponential backoff on transient network failures, and marks `job_days.status = PAID` only on confirmed settlement.
+When an employer or supervisor confirms a day, or when the 24-hour timer auto-releases a day, three things happen together inside **one database transaction**:
+
+1. The day's status changes to `CONFIRMED` or `AUTO_RELEASED`.
+2. A `RELEASED` entry is written to the ledger.
+3. A `PENDING` payout row is added to the payout queue with a unique reference key.
+
+Because all three save together, a server crash can never confirm a day without queuing its payout. A background worker sends each queued payout to Paga using its unique reference key (so retries never pay twice) and marks the day `PAID` only after Paga confirms the transfer.

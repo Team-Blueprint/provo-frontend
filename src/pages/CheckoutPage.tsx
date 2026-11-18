@@ -4,6 +4,7 @@ import { ArrowLeft } from 'reicon-react'
 import { api } from '@/api/client'
 import type { EscrowJob } from '@/api/types'
 import { EscrowCheckoutCard } from '@/components/pw/EscrowCheckoutCard'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
 
@@ -37,14 +38,11 @@ export function CheckoutPage() {
       <header className="sticky top-0 z-20 border-b border-border bg-card">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 sm:px-6 py-3.5">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-[3px] bg-[var(--pw-brick)]"
-              aria-hidden="true"
-            />
+            <ProvoMark className="h-5 w-5" />
             <span>Provo</span>
           </Link>
           <Link
-            to="/client"
+            to="/employer"
             className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
@@ -74,7 +72,7 @@ export function CheckoutPage() {
               This payment link may have expired or the job does not exist.
             </p>
             <div>
-              <Button size="md" onClick={() => navigate('/client')}>
+              <Button size="md" onClick={() => navigate('/employer')}>
                 Back to employer dashboard
               </Button>
             </div>
@@ -95,7 +93,7 @@ export function CheckoutPage() {
               }
             }}
             onSimulatePartial={(half) => setPartialPaidNaira(half)}
-            onDone={() => navigate('/client')}
+            onDone={() => navigate('/employer')}
             doneLabel="Open employer dashboard"
           />
         )}

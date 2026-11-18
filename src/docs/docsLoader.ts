@@ -14,6 +14,7 @@ export interface DocPage {
   slug: string
   title: string
   description: string
+  api?: string
   body: string
   tab: string
   group: string
@@ -28,6 +29,7 @@ const rawModules = import.meta.glob('../../docs/**/*.mdx', {
 function parseFrontmatter(raw: string): {
   title: string
   description: string
+  api?: string
   body: string
 } {
   const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/)
@@ -39,10 +41,12 @@ function parseFrontmatter(raw: string): {
   const body = match[2].trim()
   const titleMatch = yaml.match(/^title:\s*["']?(.*?)["']?\s*$/m)
   const descMatch = yaml.match(/^description:\s*["']?(.*?)["']?\s*$/m)
+  const apiMatch = yaml.match(/^api:\s*["']?(.*?)["']?\s*$/m)
 
   return {
     title: titleMatch ? titleMatch[1] : 'Documentation',
     description: descMatch ? descMatch[1] : '',
+    api: apiMatch ? apiMatch[1] : undefined,
     body,
   }
 }
@@ -71,12 +75,13 @@ export const allDocPages: Map<string, DocPage> = new Map()
 
 for (const [path, raw] of Object.entries(rawModules)) {
   const slug = normalizeSlug(path)
-  const { title, description, body } = parseFrontmatter(raw)
+  const { title, description, api, body } = parseFrontmatter(raw)
   const meta = pageMetaMap.get(slug) ?? { tab: 'Guides', group: 'Documentation' }
   allDocPages.set(slug, {
     slug,
     title,
     description,
+    api,
     body,
     tab: meta.tab,
     group: meta.group,

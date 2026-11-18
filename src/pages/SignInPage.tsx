@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Briefcase, Message, Phone, ShieldCheck } from 'reicon-react'
 import { api } from '@/api/client'
 import { TRADES, type TradeType } from '@/api/types'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -17,23 +18,37 @@ interface DemoAccount {
 
 const DEMO_ACCOUNTS: DemoAccount[] = [
   {
-    phoneDisplay: '08034419210',
-    phoneDigits: '8034419210',
-    name: 'Emem Ekpo',
+    phoneDisplay: '08011112222',
+    phoneDigits: '8011112222',
+    name: 'Emem Bassey',
     roleLabel: 'WORKER',
     role: 'worker',
   },
   {
-    phoneDisplay: '08029103311',
-    phoneDigits: '8029103311',
-    name: 'Chief Etim',
+    phoneDisplay: '08022223333',
+    phoneDigits: '8022223333',
+    name: 'Tunde Bakare',
+    roleLabel: 'WORKER',
+    role: 'worker',
+  },
+  {
+    phoneDisplay: '08077778888',
+    phoneDigits: '8077778888',
+    name: 'Chief Babatunde Adeleke',
     roleLabel: 'EMPLOYER',
     role: 'employer',
   },
   {
-    phoneDisplay: '08051120944',
-    phoneDigits: '8051120944',
-    name: 'Foreman Bassey',
+    phoneDisplay: '08099990000',
+    phoneDigits: '8099990000',
+    name: 'Amina Bello',
+    roleLabel: 'EMPLOYER',
+    role: 'employer',
+  },
+  {
+    phoneDisplay: '08055556666',
+    phoneDigits: '8055556666',
+    name: 'Segun Odegbami',
     roleLabel: 'SUPERVISOR',
     role: 'supervisor',
   },
@@ -48,6 +63,7 @@ export function SignInPage() {
   const [workerMode, setWorkerMode] = useState<'login' | 'signup'>('login')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [pin, setPin] = useState('')
   const [trade, setTrade] = useState<TradeType>('Bricklaying')
   const [customTrade, setCustomTrade] = useState('')
   const [otpSent, setOtpSent] = useState(false)
@@ -62,8 +78,13 @@ export function SignInPage() {
 
   function handlePickDemoAccount(acct: DemoAccount) {
     setError('')
+    if (acct.role === 'supervisor') {
+      navigate('/supervisor/verify')
+      return
+    }
     setWorkerMode('login')
     setPhone(acct.phoneDigits)
+    setPin('123456')
     setName(acct.name)
     setSearchParams({ role: acct.role })
     if (otpSent) {
@@ -74,7 +95,8 @@ export function SignInPage() {
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if ((role === 'worker' || role === 'employer') && workerMode === 'signup' && !name.trim()) {
+    const isSignup = (role === 'worker' || role === 'employer') && workerMode === 'signup'
+    if (isSignup && !name.trim()) {
       setError('Enter your full name.')
       return
     }
@@ -82,22 +104,34 @@ export function SignInPage() {
       setError('Enter a valid 10-digit Nigerian number (e.g. 8034419210).')
       return
     }
+    if (!/^\d{6}$/.test(pin)) {
+      setError('Enter a 6-digit numeric PIN.')
+      return
+    }
     setSubmitting(true)
     try {
-      if ((role === 'worker' || role === 'employer') && workerMode === 'signup') {
+      if (isSignup) {
         await api.sendSignupOtp({
           name,
           phone,
+          pin,
           role: role === 'employer' ? 'client' : 'worker',
           trade: role === 'worker' ? trade : undefined,
         })
+        setOtpSent(true)
+        setOtp('')
       } else {
-        await api.sendWorkerOtp(phone)
+        await api.loginWithPin({ phone, pin })
+        if (role === 'employer') {
+          navigate('/employer')
+        } else if (role === 'supervisor') {
+          navigate('/supervisor')
+        } else {
+          navigate('/worker')
+        }
       }
-      setOtpSent(true)
-      setOtp('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send OTP.')
+      setError(err instanceof Error ? err.message : 'Authentication failed.')
     } finally {
       setSubmitting(false)
     }
@@ -110,7 +144,7 @@ export function SignInPage() {
     try {
       if (role === 'employer') {
         await api.verifyWorkerLogin({ phone, otp })
-        navigate('/client')
+        navigate('/employer')
         return
       }
       if (role === 'supervisor') {
@@ -175,12 +209,16 @@ export function SignInPage() {
               >
                 <div className="space-y-0.5">
                   <p className="font-mono text-sm font-semibold text-foreground tabular-nums">
-                    {acct.phoneDisplay}
+                    {acct.role === 'supervisor' ? 'Site Supervisor Demo' : acct.phoneDisplay}
                   </p>
-                  <p className="text-xs text-muted-foreground">{acct.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {acct.role === 'supervisor'
+                      ? `${acct.name} · No PIN required`
+                      : acct.name}
+                  </p>
                 </div>
                 <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                  {acct.roleLabel}
+                  {acct.role === 'supervisor' ? 'SUPERVISOR LINK →' : acct.roleLabel}
                 </span>
               </button>
             )
@@ -218,10 +256,7 @@ export function SignInPage() {
     <div className="min-h-screen grid lg:grid-cols-2 bg-background text-foreground">
       <div className="hidden lg:flex flex-col justify-between bg-foreground text-background p-12">
         <Link to="/" className="flex items-center gap-2 font-semibold text-background">
-          <span
-            className="inline-block h-3 w-3 rounded-[3px] bg-primary"
-            aria-hidden="true"
-          />
+          <ProvoMark className="h-5 w-5" />
           <span>Provo</span>
         </Link>
 
@@ -440,23 +475,62 @@ export function SignInPage() {
                       id="signin-phone"
                       type="tel"
                       inputMode="numeric"
+                      autoComplete="off"
                       maxLength={10}
                       required
                       value={phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
-                      placeholder="8034419210"
+                      placeholder="8011112222"
                       className="w-full bg-transparent px-3 py-3 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    We’ll send a 6-digit code to your Telegram and SMS.
+                    {(role === 'worker' || role === 'employer') && workerMode === 'signup'
+                      ? 'We’ll send a 6-digit code to verify your number.'
+                      : 'Use the phone number and 6-digit PIN you signed up with.'}
                   </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="signin-pin" className="text-sm font-medium text-foreground">
+                      6-digit PIN
+                    </label>
+                    {workerMode === 'login' && (
+                      <Link
+                        to="/set-pin"
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        Registered on Telegram? Set PIN →
+                      </Link>
+                    )}
+                  </div>
+                  <Input
+                    id="signin-pin"
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="new-password"
+                    maxLength={6}
+                    required
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="••••••"
+                    className="font-mono tracking-[0.25em]"
+                  />
                 </div>
 
                 {error && <p className="text-xs font-medium text-[var(--pw-critical)]">{error}</p>}
 
                 <Button type="submit" disabled={submitting} className="w-full rounded-full py-3">
-                  <span>{submitting ? 'Sending code...' : 'Send code'}</span>
+                  <span>
+                    {(role === 'worker' || role === 'employer') && workerMode === 'signup'
+                      ? submitting
+                        ? 'Sending code...'
+                        : 'Continue'
+                      : submitting
+                        ? 'Signing in...'
+                        : 'Sign in'}
+                  </span>
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </form>

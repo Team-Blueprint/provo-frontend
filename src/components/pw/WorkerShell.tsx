@@ -12,11 +12,12 @@ import {
   Menu,
   Search,
   Settings,
-  User,
 } from 'reicon-react'
 import { api } from '@/api/client'
+import { clearSession } from '@/api/session'
 import type { Worker } from '@/api/types'
 import { OfflineBanner } from '@/components/pw/OfflineBanner'
+import { ProvoMark } from '@/components/pw/ProvoMark'
 import { Card } from '@/components/ui/card'
 
 interface WorkerShellProps {
@@ -30,25 +31,24 @@ const MENU_ITEMS = [
   { to: '/worker', label: 'Overview', icon: Home },
   { to: '/worker/jobs', label: 'Job records', icon: Briefcase, showBadge: true },
   { to: '/worker/consent', label: 'Share report', icon: FileText },
-  { to: '/worker/profile', label: 'Profile', icon: User },
+  { to: '/worker/settings', label: 'Settings', icon: Settings },
 ]
 
-const GENERAL_ITEMS = [
-  { to: '/worker/settings', label: 'Settings', icon: Settings },
+const FOOTER_ITEMS = [
   { to: '/worker/help', label: 'Help', icon: HelpCircle },
-  { to: '/', label: 'Sign out', icon: Logout },
+  { to: '/', label: 'Log out', icon: Logout, isLogout: true },
 ]
 
 const QUICK_COMMANDS = [
   { to: '/worker', label: 'Overview', meta: 'Score & payout Paga account' },
-  { to: '/worker/jobs', label: 'Job records', meta: 'Day-by-day escrow schedule' },
+  { to: '/worker/jobs', label: 'Job records', meta: 'Day-by-day work schedule' },
   { to: '/worker/consent', label: 'Share report', meta: 'Grant lender access' },
-  { to: '/worker/share-link', label: 'Share your link', meta: 'Send escrow link to employer' },
-  { to: '/worker/profile', label: 'Profile', meta: 'Trade & payout account' },
-  { to: '/worker/settings', label: 'Settings', meta: 'Alert preferences' },
+  { to: '/worker/share-link', label: 'Share your link', meta: 'Send job pay link to employer' },
+  { to: '/worker/settings?tab=account', label: 'Account', meta: 'Trade & payout account' },
+  { to: '/worker/settings?tab=preferences', label: 'Settings', meta: 'Alert preferences' },
   { to: '/worker/help', label: 'Help', meta: 'FAQs for workers' },
   { to: '/ussd', label: 'USSD simulator', meta: 'Dial *123# on feature phone' },
-  { to: '/client', label: 'Employer portal', meta: 'Create & fund a job' },
+  { to: '/employer', label: 'Employer portal', meta: 'Create & fund a job' },
 ]
 
 export function WorkerShell({
@@ -130,10 +130,7 @@ export function WorkerShell({
                 collapsed ? 'justify-center' : ''
               }`}
             >
-              <span
-                className="inline-block h-3 w-3 shrink-0 rounded-[3px] bg-[var(--pw-brick)]"
-                aria-hidden="true"
-              />
+              <ProvoMark className="h-5 w-5" />
               {!collapsed && <span className="text-base">Provo</span>}
             </Link>
 
@@ -147,7 +144,9 @@ export function WorkerShell({
                 <nav className="space-y-1 text-sm">
                   {MENU_ITEMS.map((item) => {
                     const Icon = item.icon
-                    const active = pathname === item.to
+                    const active =
+                      pathname === item.to ||
+                      (item.to === '/worker/settings' && pathname === '/worker/profile')
                     return (
                       <Link
                         key={item.to}
@@ -179,42 +178,42 @@ export function WorkerShell({
                   })}
                 </nav>
               </div>
-
-              <div className="space-y-2">
-                {!collapsed && (
-                  <p className="px-3 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    General
-                  </p>
-                )}
-                <nav className="space-y-1 text-sm">
-                  {GENERAL_ITEMS.map((item) => {
-                    const Icon = item.icon
-                    const active = pathname === item.to
-                    return (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        title={collapsed ? item.label : undefined}
-                        className={`relative flex items-center gap-2.5 rounded-[var(--pw-radius-sm)] px-3 py-2.5 font-medium transition-colors ${
-                          collapsed ? 'justify-center' : ''
-                        } ${
-                          active
-                            ? 'bg-card text-foreground before:content-[""] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r-full before:bg-primary'
-                            : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
-                        }`}
-                      >
-                        <Icon
-                          weight={active ? 'Filled' : undefined}
-                          className={`h-4 w-4 shrink-0 ${active ? 'text-primary' : ''}`}
-                          aria-hidden="true"
-                        />
-                        {!collapsed && <span>{item.label}</span>}
-                      </Link>
-                    )
-                  })}
-                </nav>
-              </div>
             </div>
+          </div>
+
+          <div className="border-t border-border/70 pt-3">
+            <nav className="space-y-1 text-sm">
+              {FOOTER_ITEMS.map((item) => {
+                const Icon = item.icon
+                const active = !item.isLogout && pathname === item.to
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => {
+                      if (item.isLogout) clearSession()
+                    }}
+                    title={collapsed ? item.label : undefined}
+                    className={`relative flex items-center gap-2.5 rounded-[var(--pw-radius-sm)] px-3 py-2.5 font-medium transition-colors ${
+                      collapsed ? 'justify-center' : ''
+                    } ${
+                      active
+                        ? 'bg-card text-foreground before:content-[""] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r-full before:bg-primary'
+                        : item.isLogout
+                          ? 'text-muted-foreground hover:bg-[var(--pw-critical-tint)] hover:text-[var(--pw-critical)]'
+                          : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
+                    }`}
+                  >
+                    <Icon
+                      weight={active ? 'Filled' : undefined}
+                      className={`h-4 w-4 shrink-0 ${active ? 'text-primary' : ''}`}
+                      aria-hidden="true"
+                    />
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                )
+              })}
+            </nav>
           </div>
         </aside>
 
@@ -231,10 +230,7 @@ export function WorkerShell({
                   <Menu className="h-4 w-4" aria-hidden="true" />
                 </button>
                 <Link to="/" className="lg:hidden inline-flex items-center gap-1.5 font-semibold">
-                  <span
-                    className="inline-block h-3 w-3 rounded-[3px] bg-[var(--pw-brick)]"
-                    aria-hidden="true"
-                  />
+                  <ProvoMark className="h-5 w-5" />
                 </Link>
                 <button
                   type="button"
@@ -267,7 +263,7 @@ export function WorkerShell({
                 >
                   <Bell className="h-4 w-4" aria-hidden="true" />
                 </Link>
-                <Link to="/worker/profile" className="flex items-center gap-2.5">
+                <Link to="/worker/settings?tab=account" className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                     {workerInitials || 'EE'}
                   </div>
@@ -306,10 +302,7 @@ export function WorkerShell({
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <Link to="/" className="flex items-center gap-2 font-semibold text-foreground">
-                  <span
-                    className="inline-block h-3 w-3 rounded-[3px] bg-[var(--pw-brick)]"
-                    aria-hidden="true"
-                  />
+                  <ProvoMark className="h-5 w-5" />
                   <span>Provo</span>
                 </Link>
                 <button
@@ -322,9 +315,11 @@ export function WorkerShell({
                 </button>
               </div>
               <nav className="space-y-1 text-sm">
-                {[...MENU_ITEMS, ...GENERAL_ITEMS].map((item) => {
+                {MENU_ITEMS.map((item) => {
                   const Icon = item.icon
-                  const active = pathname === item.to
+                  const active =
+                    pathname === item.to ||
+                    (item.to === '/worker/settings' && pathname === '/worker/profile')
                   return (
                     <Link
                       key={item.to}
@@ -334,6 +329,39 @@ export function WorkerShell({
                         active
                           ? 'bg-muted/70 text-foreground before:content-[""] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r-full before:bg-primary'
                           : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                      }`}
+                    >
+                      <Icon
+                        weight={active ? 'Filled' : undefined}
+                        className={`h-4 w-4 shrink-0 ${active ? 'text-primary' : ''}`}
+                        aria-hidden="true"
+                      />
+                      <span>{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </nav>
+            </div>
+
+            <div className="border-t border-border pt-3">
+              <nav className="space-y-1 text-sm">
+                {FOOTER_ITEMS.map((item) => {
+                  const Icon = item.icon
+                  const active = !item.isLogout && pathname === item.to
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => {
+                        setMobileMenuOpen(false)
+                        if (item.isLogout) clearSession()
+                      }}
+                      className={`relative flex items-center gap-2.5 rounded-[var(--pw-radius-sm)] px-3 py-2.5 font-medium transition-colors ${
+                        active
+                          ? 'bg-muted/70 text-foreground before:content-[""] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r-full before:bg-primary'
+                          : item.isLogout
+                            ? 'text-muted-foreground hover:bg-[var(--pw-critical-tint)] hover:text-[var(--pw-critical)]'
+                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                       }`}
                     >
                       <Icon

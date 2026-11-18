@@ -1,0 +1,111 @@
+---
+title: "Signup & PIN login"
+description: "Register a worker or employer with a 6-digit PIN, verify signup OTP, or log in directly."
+api: "POST /auth/login"
+---
+
+## Sign up (`POST /auth/signup`)
+
+Creates a new worker or employer account with a 6-digit numeric PIN and sends a verification code via SMS.
+
+<ParamField body="name" type="string" required>
+  Full name (2 to 150 characters).
+</ParamField>
+
+<ParamField body="phone" type="string" required>
+  Nigerian phone number in national or E.164 format (`+2348123456780`).
+</ParamField>
+
+<ParamField body="pin" type="string" required>
+  6-digit numeric PIN (`^[0-9]{6}$`).
+</ParamField>
+
+<ParamField body="role" type="string">
+  `"worker"` or `"employer"` (defaults to `"worker"`).
+</ParamField>
+
+<ParamField body="trade" type="TradeType">
+  Required for workers (`BRICKLAYING`, `PAINTING`, `PLUMBING`, `CARPENTRY`, `ELECTRICAL`, `WELDING`, `TAILORING`, `MECHANIC`, `OTHER`).
+</ParamField>
+
+<CodeGroup>
+```bash Sign up
+curl -X POST https://api.useproofwork.ng/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Emem Bassey",
+    "phone": "+2348123456780",
+    "pin": "123456",
+    "role": "worker",
+    "trade": "BRICKLAYING"
+  }'
+```
+
+```json 201 Created
+{
+  "phone": "+2348123456780",
+  "message": "Verification code sent via SMS.",
+  "expires_in_minutes": 10
+}
+```
+</CodeGroup>
+
+## Verify signup OTP (`POST /auth/verify-otp`)
+
+<CodeGroup>
+```bash Verify OTP
+curl -X POST https://api.useproofwork.ng/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+2348123456780",
+    "code": "482910"
+  }'
+```
+
+```json 200 OK
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Emem Bassey",
+  "phone": "+2348123456780",
+  "is_worker": true,
+  "is_client": false
+}
+```
+</CodeGroup>
+
+## Login with PIN (`POST /auth/login`)
+
+<CodeGroup>
+```bash Login
+curl -X POST https://api.useproofwork.ng/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+2348123456780",
+    "pin": "123456"
+  }'
+```
+
+```json 200 OK
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Emem Bassey",
+  "phone": "+2348123456780",
+  "is_worker": true,
+  "is_client": false
+}
+```
+</CodeGroup>
+
+## Resend OTP (`POST /auth/resend-otp`)
+
+```bash curl
+curl -X POST https://api.useproofwork.ng/auth/resend-otp \
+  -H "Content-Type: application/json" \
+  -d '{ "phone": "+2348123456780" }'
+```

@@ -1,6 +1,6 @@
 ---
 title: "Quick start"
-description: "Walk through Provo's live Worker, Client, Supervisor, and Lender surfaces in five minutes."
+description: "Walk through Provo's live Worker, Employer, Supervisor, and Lender surfaces in five minutes."
 ---
 
 You can test the complete Provo lifecycle directly in the browser using the built-in Demo Simulator or by connecting to the FastAPI backend.
@@ -8,17 +8,17 @@ You can test the complete Provo lifecycle directly in the browser using the buil
 ## Explore the live surfaces
 
 <Columns cols={2}>
-  <Card title="1. Worker Workspace" icon="user" href="/worker">
-    View Emem Ekpo's funded jobs, mark a day as done, inspect payouts, and share a consented lender report link.
+  <Card title="1. Worker Workspace" icon="user" href="/sign-in?role=worker">
+    Sign in with a 6-digit PIN (or pick the seeded worker account), view funded jobs, mark a day done, and share a consented lender report.
   </Card>
-  <Card title="2. Client Portal" icon="credit-card" href="/client">
-    Create a new job, generate a one-time Paga NUBAN, confirm pending days, or raise a dispute.
+  <Card title="2. Employer Portal" icon="credit-card" href="/sign-in?role=employer">
+    Sign in as an employer, create a new job, fund via the one-time Paga NUBAN checkout (`/checkout/:jobId`), and confirm or dispute daily work.
   </Card>
-  <Card title="3. Supervisor View" icon="user-check" href="/supervisor">
+  <Card title="3. Supervisor View" icon="user-check" href="/sign-in?role=supervisor">
     Open the foreman sign-off queue to confirm or dispute daily work on assigned sites.
   </Card>
   <Card title="4. Lender Report" icon="file-check" href="/report/rep_emem_lapo_2026">
-    Inspect a live 0–100 credibility report with tokenized clients, grade breakdown, and receipt verification.
+    Inspect a live verified work report with masked employers, outcome filters, and receipt verification.
   </Card>
 </Columns>
 
@@ -26,10 +26,10 @@ You can test the complete Provo lifecycle directly in the browser using the buil
 
 Open the floating **Demo Simulator** drawer in the bottom-right corner of the app to simulate real-world webhook and edge-case events:
 
-1. **Simulate Paga Bank Transfer:** Fires a signed `POST /webhooks/paga` event to transition an `AWAITING_FUNDING` job to `FUNDED`.
+1. **Simulate Paga Bank Transfer:** Calls `POST /sandbox/simulate-deposit` (or fires a signed `POST /webhooks/paga` event) to transition an `AWAITING_FUNDING` job to `FUNDED`.
 2. **Simulate Duplicate Callback:** Replays an existing `paga_event_id` to demonstrate idempotent deduplication (returns `200 OK` without double-crediting the ledger).
 3. **Simulate Invalid Hash:** Sends a tampered signature to verify rejection and logging in the [Admin Audit View](/admin).
-4. **USSD Simulator (`/ussd`):** Walk through the `*347*900#` feature-phone session for workers without smartphones.
+4. **USSD Simulator (`/ussd`):** Walk through the `*123#` feature-phone session backed by live `/ussd/*` endpoints.
 
 <Tip>
 Want to inspect the visual tokens, typography scale, and status components powering these pages? Visit the [Design System Showcase](/design-system).

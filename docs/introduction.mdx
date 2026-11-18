@@ -3,50 +3,50 @@ title: "Welcome to Provo"
 description: "Protected daily job pay for skilled workers, with verified work records for lenders."
 ---
 
-Skilled tradespeople in Nigeria get paid across many banks, wallets, and jobs. A bricklayer might receive a transfer from a contractor on Monday, a partial bank payment on Wednesday, and cash on Saturday. At the end of the quarter, a bank statement only shows deposits. A loan officer cannot tell whether a transfer came from a paying client, a family member, or a short-term loan.
+Skilled workers in Nigeria get paid across many banks, wallets, and jobs. A bricklayer might receive a transfer from a contractor on Monday, a part payment on Wednesday, and cash on Saturday. At the end of the month, a bank statement only lists deposits. A loan officer cannot tell whether a transfer came from a paying employer, a family member, or another loan.
 
-Provo solves this by tying payment directly to confirmed daily work. Before a job starts, the client locks the full job total into a one-time Paga virtual account. Each day the worker finishes, the client or an assigned site supervisor confirms the day, releasing that day's pay to the worker's Paga account and recording a verified work entry.
+Provo solves this by tying payment directly to confirmed daily work. Before a job starts, the employer sends the full job pay into a one-time 10-digit bank account number created for that job. Each day the worker finishes, the employer or a site supervisor confirms the day. Provo then sends that day's pay to the worker's Paga account and adds a verified day to their work record.
 
 <Note>
-**Provo** holds job pay in Paga escrow before Day 1 begins, disburses pay day by day upon confirmation, and compiles settled jobs into a signed credibility report that lenders can verify.
+**Provo** holds job pay safely before Day 1 begins, pays the worker day by day as work is confirmed, and turns settled jobs into a signed work report that lenders can trust.
 </Note>
 
 ## Who uses Provo
 
 <Columns cols={3}>
   <Card title="Workers & Artisans" icon="hammer" href="/docs/workers/overview">
-    Bricklayers, painters, plumbers, tailors, and mechanics see locked funds before starting a job and build a verifiable income history.
+    Bricklayers, painters, plumbers, tailors, and mechanics see that job money is locked before starting work and build a proven income history.
   </Card>
-  <Card title="Clients & Supervisors" icon="briefcase" href="/docs/employers/overview">
-    Homeowners and site contractors fund a one-time Paga account upfront and release pay daily, or delegate daily sign-off to a foreman on site.
+  <Card title="Employers & Supervisors" icon="briefcase" href="/docs/employers/overview">
+    Homeowners and site contractors pay into a one-time bank account upfront and release pay daily, or let a site foreman confirm daily work.
   </Card>
   <Card title="Lenders & Partners" icon="shield-check" href="/docs/lenders/overview">
-    Microfinance banks and credit providers read consent-gated, Ed25519-signed snapshots with tokenized client IDs and transparent fraud checks.
+    Microfinance banks and credit providers read worker-approved reports with masked employer IDs and clear fraud checks.
   </Card>
 </Columns>
 
-## Why Provo works for underwriting
+## Why lenders trust Provo reports
 
-Across Nigeria, payment access rose from 22% to 52% of adults between 2010 and 2023, while credit access grew by roughly 4 percentage points (EFInA, 2023). Across Africa, around 83% of jobs are informal (ILO and UNECA, 2024). Workers have mobile wallets, yet wallets alone do not prove steady employment.
+Across Nigeria, payment access rose from 22% to 52% of adults between 2010 and 2023, while credit access grew by roughly 4 percentage points (EFInA, 2023). Across Africa, around 83% of jobs are informal (ILO and UNECA, 2024). Workers have mobile wallets, yet wallets alone do not prove steady work.
 
-- **Lender-neutral:** Any microfinance bank or fintech can read a worker's Provo report regardless of which Nigerian bank funded the jobs.
-- **Works from any bank:** Clients fund each job via standard NIBSS NIP transfer from OPay, UBA, Access, GTBank, Kuda, or Paga Checkout.
-- **Funded upfront:** Locking `total_kobo` before Day 1 proves the job budget exists before work begins.
-- **Structured daily outcomes:** Every day records an explicit status (`CONFIRMED`, `AUTO_RELEASED`, `DISPUTED`, or `PAID`), along with the trade, duration, and receipt ID.
+- **Works for any lender:** Any microfinance bank or fintech can read a worker's Provo report, regardless of which Nigerian bank funded the jobs.
+- **Pay from any bank:** Employers fund each job with a normal bank transfer from OPay, UBA, Access, GTBank, Kuda, or Paga Checkout.
+- **Funded upfront:** Locking the full job amount before Day 1 proves the money exists before work starts.
+- **Clear daily outcomes:** Every day records what happened (`CONFIRMED`, `AUTO_RELEASED`, `DISPUTED`, or `PAID`), along with the trade, number of days, and receipt number.
 
 ## Next steps
 
 <Columns cols={2}>
   <Card title="The one rule" icon="lock" href="/docs/the-one-rule">
-    Why self-reported entries carry zero weight, and how each day status is scored.
+    Why self-reported entries count for nothing, and how daily confirmation outcomes are labelled.
   </Card>
   <Card title="How it works" icon="route" href="/docs/how-it-works">
-    Follow a multi-day job from NUBAN funding to daily payout and lender report.
+    Follow a multi-day job from funding to daily payout and lender report.
   </Card>
   <Card title="Quick start" icon="bolt" href="/docs/quick-start">
-    Try the Worker, Client, Supervisor, and Lender flows in the live demo.
+    Try the Worker, Employer, Supervisor, and Lender flows in the live demo.
   </Card>
   <Card title="API Reference" icon="code" href="/docs/api-reference/introduction">
-    Integrate with FastAPI endpoints, Paga webhooks, and signed snapshots.
+    Connect to Provo endpoints, Paga webhooks, and signed reports.
   </Card>
 </Columns>
