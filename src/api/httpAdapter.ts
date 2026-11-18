@@ -264,21 +264,15 @@ function mapJobDay(d: BackendJobDay): JobDay {
 }
 
 function mapJob(
-  j: BackendJob & { client_name?: string | null },
+  j: BackendJob,
   workerNameLookup?: Map<string, string>,
 ): EscrowJob {
   const workerName =
     (j.worker_id && workerNameLookup?.get(j.worker_id)) || "Assigned artisan";
-  const session = getSession();
-  const fallbackEmployer =
-    session?.user.id === j.client_id && session.user.name
-      ? session.user.name
-      : `Employer #${j.client_id.slice(0, 4).toUpperCase()}`;
-  const clientName = j.client_name?.trim() || fallbackEmployer;
   return {
     id: j.id,
     clientId: j.client_id,
-    clientName,
+    clientName: "Employer",
     clientToken: `CL-${j.client_id.slice(0, 6).toUpperCase()}`,
     workerId: j.worker_id ?? "",
     workerName,
@@ -906,31 +900,31 @@ export const httpAdapter = {
     });
   },
 
-  async getWorkerSettings(): Promise<{ alertChannel: "telegram" | "sms" }> {
+  async getWorkerSettings(): Promise<{ alertChannel: "whatsapp" | "sms" }> {
     const session = getSession();
     const workerId = session?.user.id;
-    if (!workerId) return { alertChannel: "telegram" };
+    if (!workerId) return { alertChannel: "whatsapp" };
     const res = await apiFetch<{
       worker_id: string;
-      alert_channel: "telegram" | "sms";
+      alert_channel: "whatsapp" | "sms";
     }>(`/workers/${workerId}/settings`);
-    return { alertChannel: res.alert_channel === "sms" ? "sms" : "telegram" };
+    return { alertChannel: res.alert_channel };
   },
 
-  async updateWorkerSettings(alertChannel: "telegram" | "sms"): Promise<{
-    alertChannel: "telegram" | "sms";
+  async updateWorkerSettings(alertChannel: "whatsapp" | "sms"): Promise<{
+    alertChannel: "whatsapp" | "sms";
   }> {
     const session = getSession();
     const workerId = session?.user.id;
     if (!workerId) throw new Error("Sign in as a worker first.");
     const res = await apiFetch<{
       worker_id: string;
-      alert_channel: "telegram" | "sms";
+      alert_channel: "whatsapp" | "sms";
     }>(`/workers/${workerId}/settings`, {
       method: "PATCH",
       body: JSON.stringify({ alert_channel: alertChannel }),
     });
-    return { alertChannel: res.alert_channel === "sms" ? "sms" : "telegram" };
+    return { alertChannel: res.alert_channel };
   },
 
   async verifyReceipt(receiptNumber: string): Promise<{

@@ -1,4 +1,4 @@
-import { formatMaskedEmployer, getScoreBand } from '@/lib/format'
+import { getScoreBand } from '@/lib/format'
 import {
   SEED_CONSENTS,
   SEED_DISPUTES,
@@ -95,7 +95,16 @@ function computeDailySchedule(totalKobo: number, daysCount: number): JobDay[] {
 }
 
 function maskEmployerName(name: string, token: string): string {
-  return formatMaskedEmployer(name, token)
+  const clean = name.trim()
+  if (!clean || clean.includes('***')) return clean || `Employer (#${token})`
+  const masked = clean
+    .split(/\s+/)
+    .map((part) => {
+      if (part.length <= 2) return `${part[0]}*`
+      return `${part[0]}${'*'.repeat(Math.min(3, part.length - 2))}${part[part.length - 1]}`
+    })
+    .join(' ')
+  return token && !clean.includes(token) ? `${masked} (#${token})` : masked
 }
 
 function computeReport(state: DemoState, reportToken: string): ReportPayload {
@@ -862,12 +871,12 @@ export const mockAdapter = {
     saveState(state)
   },
 
-  async getWorkerSettings(): Promise<{ alertChannel: 'telegram' | 'sms' }> {
+  async getWorkerSettings(): Promise<{ alertChannel: 'whatsapp' | 'sms' }> {
     const raw = window.localStorage.getItem('proofwork_alert_channel')
-    return { alertChannel: raw === 'sms' ? 'sms' : 'telegram' }
+    return { alertChannel: raw === 'sms' ? 'sms' : 'whatsapp' }
   },
 
-  async updateWorkerSettings(alertChannel: 'telegram' | 'sms') {
+  async updateWorkerSettings(alertChannel: 'whatsapp' | 'sms') {
     window.localStorage.setItem('proofwork_alert_channel', alertChannel)
     return { alertChannel }
   },

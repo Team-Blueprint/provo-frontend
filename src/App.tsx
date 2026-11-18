@@ -1,8 +1,5 @@
 import { useEffect } from 'react'
-import { QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
-import { queryClient } from '@/api/queryClient'
-import { AppPreloader } from '@/components/pw/AppPreloader'
 import { DemoSimulator } from '@/components/pw/DemoSimulator'
 import { RequireAuth } from '@/components/pw/RequireAuth'
 import { ToastViewport } from '@/components/ui/toast'
@@ -40,18 +37,8 @@ function ScrollToTop() {
 }
 
 export function App() {
-  useEffect(() => {
-    const onUpdated = () => {
-      queryClient.invalidateQueries()
-    }
-    window.addEventListener('proofwork:demo-updated', onUpdated)
-    return () => window.removeEventListener('proofwork:demo-updated', onUpdated)
-  }, [])
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AppPreloader />
+    <BrowserRouter>
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -192,7 +179,6 @@ export function App() {
       <DemoSimulator />
       <ToastViewport />
     </BrowserRouter>
-    </QueryClientProvider>
   )
 }
 

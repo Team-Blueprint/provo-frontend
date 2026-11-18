@@ -30,27 +30,6 @@ export function formatPhoneNg(input: string): string {
   return input
 }
 
-export function formatMaskedEmployer(name: string, token?: string): string {
-  const raw = name.trim()
-  const suffixMatch = raw.match(/\((#[A-Za-z0-9_-]+)\)\s*$/)
-  const extractedToken = suffixMatch?.[1]
-  const baseName = raw.replace(/\s*\(#[A-Za-z0-9_-]+\)\s*$/, '').trim()
-  const fallbackToken = token ? (token.startsWith('#') ? token : `#${token.split('-').pop() || token}`) : ''
-  const finalToken = extractedToken || fallbackToken
-
-  if (!baseName || baseName === 'Employer' || baseName.startsWith('Employer #') || baseName.startsWith('Client-')) {
-    return finalToken ? `Employer (${finalToken})` : 'Employer'
-  }
-
-  const initials = baseName
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => `${part[0].toUpperCase()}.`)
-    .join(' ')
-
-  return finalToken ? `${initials} (${finalToken})` : initials
-}
-
 export function getScoreBand(score: number): string {
   if (score >= 85) return 'Established'
   if (score >= 65) return 'Trusted'

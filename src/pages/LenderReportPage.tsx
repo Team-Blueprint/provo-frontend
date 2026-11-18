@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import {
   Briefcase,
@@ -8,10 +7,10 @@ import {
   ShieldCheck,
   Warning,
 } from 'reicon-react'
-import { lenderReportQueryOptions } from '@/api/queries'
-import type { ConfirmationOutcome } from '@/api/types'
+import { api } from '@/api/client'
+import type { ConfirmationOutcome, ReportPayload } from '@/api/types'
 import { downloadJobHistoryImage } from '@/lib/downloadJobHistory'
-import { formatMaskedEmployer, formatNaira, formatShortDate, getTierDetails } from '@/lib/format'
+import { formatNaira, formatShortDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
 import { EmptyState } from '@/components/pw/EmptyState'
@@ -28,8 +27,20 @@ const OUTCOME_FILTERS: Array<{ key: 'all' | ConfirmationOutcome; label: string }
 
 export function LenderReportPage() {
   const { reportToken = 'rep_emem_lapo_2026' } = useParams()
-  const { data: report = null } = useQuery(lenderReportQueryOptions(reportToken))
+  const [report, setReport] = useState<ReportPayload | null>(null)
   const [outcomeFilter, setOutcomeFilter] = useState<'all' | ConfirmationOutcome>('all')
+
+  async function load() {
+    const data = await api.getReport(reportToken)
+    setReport(data)
+  }
+
+  useEffect(() => {
+    load()
+    const handler = () => load()
+    window.addEventListener('proofwork:demo-updated', handler)
+    return () => window.removeEventListener('proofwork:demo-updated', handler)
+  }, [reportToken])
 
   useEffect(() => {
     if (!report) return
@@ -181,58 +192,17 @@ export function LenderReportPage() {
 
               <div className="rounded-[14px] border border-border bg-muted/40 px-5 py-3.5 text-left sm:text-right shrink-0">
                 <span className="block text-xs font-medium text-muted-foreground">
-                  Profile score
+                  Total verified pay
                 </span>
                 <span className="text-3xl font-bold tabular-nums text-foreground block">
-                  {report.score}
-                  <span className="text-base font-normal text-muted-foreground"> / 100</span>
+                  {formatNaira(totalSettledNaira)}
                 </span>
                 <span className="block text-xs font-medium text-primary mt-0.5 tabular-nums">
-                  {getTierDetails(report.score).tier} tier · {report.clientTokens.length}{' '}
-                  {report.clientTokens.length === 1 ? 'employer' : 'employers'}
+                  {report.clientTokens.length}{' '}
+                  {report.clientTokens.length === 1 ? 'employer' : 'employers'} · Paga escrow
                 </span>
               </div>
             </Card>
-
-            {report.components.length > 0 && (
-              <Card className="p-5 sm:p-6 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h2 className="text-base font-semibold text-foreground">
-                      Profile score breakdown
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      {getTierDetails(report.score).unlocks}
-                    </p>
-                  </div>
-                  <Link
-                    to="/docs/lenders/profile-score"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
-                    How scoring &amp; tiers work →
-                  </Link>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                  {report.components.map((comp) => (
-                    <div
-                      key={comp.key}
-                      className="rounded-[var(--pw-radius-md)] border border-border bg-muted/30 p-3 space-y-1"
-                    >
-                      <span className="block text-xs text-muted-foreground">{comp.label}</span>
-                      <span className="block text-lg font-semibold tabular-nums text-foreground">
-                        {comp.points}
-                        <span className="text-xs font-normal text-muted-foreground">
-                          /{comp.maxPoints}
-                        </span>
-                      </span>
-                      <span className="block text-[11px] text-muted-foreground leading-snug">
-                        {comp.detail}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
 
             {report.circularFlags.length > 0 && (
               <Card className="border-[var(--pw-critical)]/40 bg-[var(--pw-critical-tint)] p-4 space-y-1">
@@ -319,7 +289,7 @@ export function LenderReportPage() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-sm font-semibold text-foreground truncate">
-                          {formatMaskedEmployer(ct.displayLabel, ct.token)}
+                          {ct.displayLabel}
                         </span>
                         <span className="text-[11px] text-[var(--pw-positive)] font-medium shrink-0">
                           Verified

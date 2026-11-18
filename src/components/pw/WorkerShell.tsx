@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -14,7 +13,7 @@ import {
   Search,
   Settings,
 } from 'reicon-react'
-import { workerDashboardQueryOptions } from '@/api/queries'
+import { api } from '@/api/client'
 import { clearSession } from '@/api/session'
 import type { Worker } from '@/api/types'
 import { OfflineBanner } from '@/components/pw/OfflineBanner'
@@ -56,7 +55,7 @@ export function WorkerShell({
   children,
   searchQuery,
   onSearchChange,
-  jobCount,
+  jobCount = 11,
 }: WorkerShellProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -64,12 +63,17 @@ export function WorkerShell({
   const [collapsed, setCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const { data: dashboard } = useQuery(workerDashboardQueryOptions())
-  const activeWorker: Worker | null = dashboard?.worker ?? null
+  const [activeWorker, setActiveWorker] = useState<Worker | null>(null)
   const modalInputRef = useRef<HTMLInputElement>(null)
   const query = searchQuery ?? localSearch
   const setQuery = onSearchChange ?? setLocalSearch
-  const resolvedJobCount = jobCount ?? dashboard?.jobs.length
+
+  useEffect(() => {
+    const loadWorker = () => api.getWorkerDashboard().then((d) => setActiveWorker(d.worker))
+    loadWorker()
+    window.addEventListener('proofwork:demo-updated', loadWorker)
+    return () => window.removeEventListener('proofwork:demo-updated', loadWorker)
+  }, [])
 
   const workerInitials = (activeWorker?.name ?? 'Emem Ekpo')
     .split(/\s+/)
@@ -164,9 +168,9 @@ export function WorkerShell({
                           />
                           {!collapsed && <span>{item.label}</span>}
                         </span>
-                        {!collapsed && item.showBadge && resolvedJobCount !== undefined && (
+                        {!collapsed && item.showBadge && (
                           <span className="rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] font-semibold text-primary-foreground">
-                            {resolvedJobCount}
+                            {jobCount}
                           </span>
                         )}
                       </Link>

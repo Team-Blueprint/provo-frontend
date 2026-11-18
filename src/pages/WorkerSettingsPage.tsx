@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '@/api/client'
-import { workerDashboardQueryOptions, workerSettingsQueryOptions } from '@/api/queries'
+import type { Worker } from '@/api/types'
 import { WorkerShell } from '@/components/pw/WorkerShell'
 import { Button } from '@/components/ui/button'
 import { Card, Skeleton } from '@/components/ui/card'
@@ -11,23 +10,24 @@ import { Select } from '@/components/ui/select'
 type SettingsTab = 'account' | 'preferences'
 
 export function WorkerSettingsPage() {
-  const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const rawTab = searchParams.get('tab')
   const activeTab: SettingsTab = rawTab === 'preferences' ? 'preferences' : 'account'
 
-  const { data: dashboard } = useQuery(workerDashboardQueryOptions())
-  const { data: settingsData } = useQuery(workerSettingsQueryOptions())
-  const worker = dashboard?.worker ?? null
-  const [channel, setChannel] = useState<'telegram' | 'sms'>('telegram')
+  const [worker, setWorker] = useState<Worker | null>(null)
+  const [channel, setChannel] = useState<'whatsapp' | 'sms'>('whatsapp')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    if (settingsData?.alertChannel) {
-      setChannel(settingsData.alertChannel === 'sms' ? 'sms' : 'telegram')
+    const sync = () => {
+      api.getWorkerDashboard().then((d) => setWorker(d.worker)).catch(() => {})
     }
-  }, [settingsData])
+    sync()
+    api.getWorkerSettings().then((res) => setChannel(res.alertChannel)).catch(() => {})
+    window.addEventListener('proofwork:demo-updated', sync)
+    return () => window.removeEventListener('proofwork:demo-updated', sync)
+  }, [])
 
   function setTab(next: SettingsTab) {
     setSearchParams({ tab: next })
@@ -37,7 +37,6 @@ export function WorkerSettingsPage() {
     setSaving(true)
     try {
       await api.updateWorkerSettings(channel)
-      await queryClient.invalidateQueries({ queryKey: ['worker', 'settings'] })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } finally {
@@ -153,11 +152,11 @@ export function WorkerSettingsPage() {
               id="pref-channel"
               value={channel}
               onValueChange={(v) => {
-                setChannel(v === 'sms' ? 'sms' : 'telegram')
+                setChannel(v === 'sms' ? 'sms' : 'whatsapp')
                 setSaved(false)
               }}
               options={[
-                { value: 'telegram', label: 'Telegram + SMS fallback' },
+                { value: 'whatsapp', label: 'WhatsApp + SMS fallback' },
                 { value: 'sms', label: 'SMS only' },
               ]}
             />

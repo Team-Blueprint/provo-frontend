@@ -9,15 +9,12 @@ Traditional loan checks rely on salary slips or six months of bank statements. F
 - How many different employers actually pay this worker?
 - How steadily do they work from month to month?
 
-Provo answers these questions with a worker-approved **Lender Work Report** (`/report/{token}` or `GET /reports/{token}`), combining a deterministic **0–100 Profile Score** and tier band with the underlying verified signals so lenders can apply their own underwriting rules.
+Provo answers these questions with a worker-approved **Lender Work Report** (`/report/{token}` or `GET /reports/{token}`), without imposing a single proprietary score—so each lender can apply its own underwriting rules to the raw verified signals.
 
 ## What a lender sees
 
-<Columns cols={3}>
-  <Card title="Profile score (0–100)" icon="chart-bar" href="/docs/lenders/profile-score">
-    Deterministic 0–100 score, tier bands, and anti-gaming caps across confirmed days and repeat employers.
-  </Card>
-  <Card title="Verified work signals" icon="check-circle" href="/docs/the-one-rule">
+<Columns cols={2}>
+  <Card title="Verified work signals" icon="chart-bar" href="/docs/the-one-rule">
     Confirmed days, supervisor-confirmed days, 24h auto-released days, active months, and repeat employers.
   </Card>
   <Card title="Signed snapshots" icon="shield-check" href="/docs/lenders/signed-snapshots">
